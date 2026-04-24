@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: budget-book-db
+    restart: always
+    environment:
+      POSTGRES_USER: budget_book_user
+      POSTGRES_PASSWORD: budget_book_pass
+      POSTGRES_DB: budget_book_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
