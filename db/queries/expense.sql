@@ -33,6 +33,25 @@ LEFT JOIN categories c ON e.category_id = c.id
 WHERE e.user_id = $1
 ORDER BY e.expense_date DESC;
 
+-- name: ListExpensesByDateRange :many
+SELECT
+    e.id,
+    e.user_id,
+    e.category_id,
+    e.amount,
+    e.description,
+    e.expense_date,
+    e.payment_method,
+    e.memo,
+    e.created_at,
+    e.updated_at,
+    c.name AS category_name
+FROM expenses e
+         LEFT JOIN categories c ON e.category_id = c.id
+WHERE e.user_id = $1
+  AND e.expense_date BETWEEN $2 AND $3
+ORDER BY e.expense_date DESC;
+
 -- name: CreateExpense :one
 INSERT INTO expenses (
     user_id,

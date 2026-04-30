@@ -79,6 +79,35 @@ func (h *ExpenseHandler) GetByID(c *gin.Context) {
 	c.JSON(http.StatusOK, response.NewExpenseResponse(result))
 }
 
+// GET /api/expenses/date?from=2026-04-01&to=2026-04-30
+func (h *ExpenseHandler) GetByDateRange(c *gin.Context) {
+	userID, err := extractUserID(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "X-User-Idヘッダーが不正です"})
+		return
+	}
+
+	from, err := time.Parse("2006-01-02", c.Query("from"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "fromの形式が不正です（例: 2026-04-01）"})
+		return
+	}
+
+	to, err := time.Parse("2006-01-02", c.Query("to"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "toの形式が不正です（例: 2026-04-30）"})
+		return
+	}
+
+	results, err := h.getUC.ExecuteGetByDateRange(c.Request.Context(), userID, from, to)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, response.NewExpenseListResponse(results))
+}
+
 // POST /api/expenses
 func (h *ExpenseHandler) Create(c *gin.Context) {
 	userID, err := extractUserID(c)

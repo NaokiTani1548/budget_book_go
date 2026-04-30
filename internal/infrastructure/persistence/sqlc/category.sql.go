@@ -11,6 +11,102 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const createCategory = `-- name: CreateCategory :one
+INSERT INTO categories (
+    user_id,
+    name,
+    type,
+    color,
+    sort_order,
+    is_default
+) VALUES (
+             $1, $2, $3, $4, $5, $6
+         )
+    RETURNING id, user_id, name, type, color, sort_order, is_default, created_at
+`
+
+type CreateCategoryParams struct {
+	UserID    pgtype.UUID `json:"user_id"`
+	Name      string      `json:"name"`
+	Type      string      `json:"type"`
+	Color     *string     `json:"color"`
+	SortOrder int32       `json:"sort_order"`
+	IsDefault bool        `json:"is_default"`
+}
+
+func (q *Queries) CreateCategory(ctx context.Context, arg CreateCategoryParams) (Category, error) {
+	row := q.db.QueryRow(ctx, createCategory,
+		arg.UserID,
+		arg.Name,
+		arg.Type,
+		arg.Color,
+		arg.SortOrder,
+		arg.IsDefault,
+	)
+	var i Category
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Name,
+		&i.Type,
+		&i.Color,
+		&i.SortOrder,
+		&i.IsDefault,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const deleteCategory = `-- name: DeleteCategory :exec
+DELETE FROM categories
+WHERE id = $1 AND user_id = $2
+`
+
+type DeleteCategoryParams struct {
+	ID     pgtype.UUID `json:"id"`
+	UserID pgtype.UUID `json:"user_id"`
+}
+
+func (q *Queries) DeleteCategory(ctx context.Context, arg DeleteCategoryParams) error {
+	_, err := q.db.Exec(ctx, deleteCategory, arg.ID, arg.UserID)
+	return err
+}
+
+const getCategory = `-- name: GetCategory :one
+SELECT
+    id,
+    user_id,
+    name,
+    type,
+    color,
+    sort_order,
+    is_default,
+    created_at
+FROM categories
+WHERE id = $1 AND user_id = $2
+`
+
+type GetCategoryParams struct {
+	ID     pgtype.UUID `json:"id"`
+	UserID pgtype.UUID `json:"user_id"`
+}
+
+func (q *Queries) GetCategory(ctx context.Context, arg GetCategoryParams) (Category, error) {
+	row := q.db.QueryRow(ctx, getCategory, arg.ID, arg.UserID)
+	var i Category
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Name,
+		&i.Type,
+		&i.Color,
+		&i.SortOrder,
+		&i.IsDefault,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const listCategories = `-- name: ListCategories :many
 SELECT
     id,
@@ -53,4 +149,46 @@ func (q *Queries) ListCategories(ctx context.Context, userID pgtype.UUID) ([]Cat
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateCategory = `-- name: UpdateCategory :one
+UPDATE categories SET
+                      name       = $1,
+                      type       = $2,
+                      color      = $3,
+                      sort_order = $4
+WHERE id = $5 AND user_id = $6
+    RETURNING id, user_id, name, type, color, sort_order, is_default, created_at
+`
+
+type UpdateCategoryParams struct {
+	Name      string      `json:"name"`
+	Type      string      `json:"type"`
+	Color     *string     `json:"color"`
+	SortOrder int32       `json:"sort_order"`
+	ID        pgtype.UUID `json:"id"`
+	UserID    pgtype.UUID `json:"user_id"`
+}
+
+func (q *Queries) UpdateCategory(ctx context.Context, arg UpdateCategoryParams) (Category, error) {
+	row := q.db.QueryRow(ctx, updateCategory,
+		arg.Name,
+		arg.Type,
+		arg.Color,
+		arg.SortOrder,
+		arg.ID,
+		arg.UserID,
+	)
+	var i Category
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Name,
+		&i.Type,
+		&i.Color,
+		&i.SortOrder,
+		&i.IsDefault,
+		&i.CreatedAt,
+	)
+	return i, err
 }

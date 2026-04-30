@@ -54,8 +54,20 @@ func (r *expenseRepository) FindByUserID(ctx context.Context, userID uuid.UUID) 
 }
 
 func (r *expenseRepository) FindByDateRange(ctx context.Context, userID uuid.UUID, from time.Time, to time.Time) ([]*entity.Expense, error) {
-	// Phase3で実装
-	return nil, nil
+	rows, err := r.queries.ListExpensesByDateRange(ctx, dbsqlc.ListExpensesByDateRangeParams{
+		UserID:        uuidToPgtype(userID),
+		ExpenseDate:   dateToPgtype(from),
+		ExpenseDate_2: dateToPgtype(to),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	expenses := make([]*entity.Expense, len(rows))
+	for i, row := range rows {
+		expenses[i] = dateRangeRowToExpense(row)
+	}
+	return expenses, nil
 }
 
 func (r *expenseRepository) Save(ctx context.Context, expense *entity.Expense) (*entity.Expense, error) {
@@ -157,6 +169,22 @@ func rowToExpense(row dbsqlc.GetExpenseRow) *entity.Expense {
 }
 
 func listRowToExpense(row dbsqlc.ListExpensesRow) *entity.Expense {
+	return &entity.Expense{
+		ID:            pgtypeToUUID(row.ID),
+		UserID:        pgtypeToUUID(row.UserID),
+		CategoryID:    optionalPgtypeToUUID(row.CategoryID),
+		Amount:        numericToFloat(row.Amount),
+		Description:   row.Description,
+		ExpenseDate:   row.ExpenseDate.Time,
+		PaymentMethod: row.PaymentMethod,
+		Memo:          row.Memo,
+		CreatedAt:     row.CreatedAt.Time,
+		UpdatedAt:     row.UpdatedAt.Time,
+		CategoryName:  row.CategoryName,
+	}
+}
+
+func dateRangeRowToExpense(row dbsqlc.ListExpensesByDateRangeRow) *entity.Expense {
 	return &entity.Expense{
 		ID:            pgtypeToUUID(row.ID),
 		UserID:        pgtypeToUUID(row.UserID),

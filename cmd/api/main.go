@@ -31,6 +31,9 @@ func main() {
 	updateExpenseUC := usecaseexpense.NewUpdateExpenseUseCase(expenseRepo)
 	deleteExpenseUC := usecaseexpense.NewDeleteExpenseUseCase(expenseRepo)
 	getCategoryUC   := usecasecategory.NewGetCategoryUseCase(categoryRepo)
+	createCategoryUC := usecasecategory.NewCreateCategoryUseCase(categoryRepo)
+	updateCategoryUC := usecasecategory.NewUpdateCategoryUseCase(categoryRepo)
+	deleteCategoryUC := usecasecategory.NewDeleteCategoryUseCase(categoryRepo)
 
 
 	// Handler
@@ -39,8 +42,13 @@ func main() {
 		getExpenseUC,
 		updateExpenseUC,
 		deleteExpenseUC,
-	)
-	categoryHandler := handler.NewCategoryHandler(getCategoryUC)
+		)
+	categoryHandler := handler.NewCategoryHandler(
+		getCategoryUC,
+		createCategoryUC,
+		updateCategoryUC,
+		deleteCategoryUC,
+		)
 
 	// Router
 	r := gin.Default()
@@ -50,6 +58,7 @@ func main() {
 		expenses := api.Group("/expenses")
 		{
 			expenses.GET("",      expenseHandler.GetAll)
+			expenses.GET("/date", expenseHandler.GetByDateRange)
 			expenses.GET("/:id",  expenseHandler.GetByID)
 			expenses.POST("",     expenseHandler.Create)
 			expenses.PUT("/:id",  expenseHandler.Update)
@@ -57,7 +66,10 @@ func main() {
 		}
 		categories := api.Group("/categories")
 		{
-			categories.GET("", categoryHandler.GetAllByUserID)
+			categories.GET("",       categoryHandler.GetAllByUserID)
+			categories.POST("",      categoryHandler.Create)
+			categories.PUT("/:id",   categoryHandler.Update)
+			categories.DELETE("/:id", categoryHandler.Delete)
 		}
 	}
 

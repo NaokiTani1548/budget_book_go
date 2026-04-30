@@ -2,6 +2,7 @@ package expense
 
 import (
 	"context"
+	"time"
 
 	"budget-book-go/internal/application/dto"
 	"budget-book-go/internal/domain/repository"
@@ -36,4 +37,17 @@ func (uc *GetExpenseUseCase) ExecuteGetOne(ctx context.Context, id uuid.UUID, us
 		return nil, err
 	}
 	return toExpenseResult(expense), nil
+}
+
+func (uc *GetExpenseUseCase) ExecuteGetByDateRange(ctx context.Context, userID uuid.UUID, from time.Time, to time.Time) ([]*dto.ExpenseResult, error) {
+	expenses, err := uc.expenseRepo.FindByDateRange(ctx, userID, from, to)
+	if err != nil {
+		return nil, err
+	}
+
+	results := make([]*dto.ExpenseResult, len(expenses))
+	for i, e := range expenses {
+		results[i] = toExpenseResult(e)
+	}
+	return results, nil
 }
