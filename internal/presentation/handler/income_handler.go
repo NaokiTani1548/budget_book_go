@@ -3,9 +3,8 @@ package handler
 import (
 	"net/http"
 	"time"
-
 	"budget-book-go/internal/application/dto"
-	usecaseexpense "budget-book-go/internal/application/usecase/expense"
+	usecaseincome "budget-book-go/internal/application/usecase/income"
 	domainerror "budget-book-go/internal/domain/error"
 	"budget-book-go/internal/presentation/request"
 	"budget-book-go/internal/presentation/response"
@@ -14,20 +13,20 @@ import (
 	"github.com/google/uuid"
 )
 
-type ExpenseHandler struct {
-	createUC *usecaseexpense.CreateExpenseUseCase
-	getUC    *usecaseexpense.GetExpenseUseCase
-	updateUC *usecaseexpense.UpdateExpenseUseCase
-	deleteUC *usecaseexpense.DeleteExpenseUseCase
+type IncomeHandler struct {
+	createUC *usecaseincome.CreateIncomeUseCase
+	getUC    *usecaseincome.GetIncomeUseCase
+	updateUC *usecaseincome.UpdateIncomeUseCase
+	deleteUC *usecaseincome.DeleteIncomeUseCase
 }
 
-func NewExpenseHandler(
-	createUC *usecaseexpense.CreateExpenseUseCase,
-	getUC *usecaseexpense.GetExpenseUseCase,
-	updateUC *usecaseexpense.UpdateExpenseUseCase,
-	deleteUC *usecaseexpense.DeleteExpenseUseCase,
-) *ExpenseHandler {
-	return &ExpenseHandler{
+func NewIncomeHandler(
+	createUC *usecaseincome.CreateIncomeUseCase,
+	getUC *usecaseincome.GetIncomeUseCase,
+	updateUC *usecaseincome.UpdateIncomeUseCase,
+	deleteUC *usecaseincome.DeleteIncomeUseCase,
+) *IncomeHandler {
+	return &IncomeHandler{
 		createUC: createUC,
 		getUC:    getUC,
 		updateUC: updateUC,
@@ -35,8 +34,8 @@ func NewExpenseHandler(
 	}
 }
 
-// GET /api/expenses
-func (h *ExpenseHandler) GetAll(c *gin.Context) {
+// GET /api/incomes
+func (h *IncomeHandler) GetAll(c *gin.Context) {
 	userID, err := extractUserID(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "X-User-Idヘッダーが不正です"})
@@ -49,11 +48,11 @@ func (h *ExpenseHandler) GetAll(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, response.NewExpenseListResponse(results))
+	c.JSON(http.StatusOK, response.NewIncomeListResponse(results))
 }
 
-// GET /api/expenses/:id
-func (h *ExpenseHandler) GetByID(c *gin.Context) {
+// GET /api/incomes/:id
+func (h *IncomeHandler) GetByID(c *gin.Context) {
 	userID, err := extractUserID(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "X-User-Idヘッダーが不正です"})
@@ -76,11 +75,28 @@ func (h *ExpenseHandler) GetByID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, response.NewExpenseResponse(result))
+	c.JSON(http.StatusOK, response.NewIncomeResponse(result))
 }
 
-// GET /api/expenses/date?from=2026-04-01&to=2026-04-30
-func (h *ExpenseHandler) GetByDateRange(c *gin.Context) {
+// GET /api/incomes/planned
+func (h *IncomeHandler) GetPlanned(c *gin.Context) {
+	userID, err := extractUserID(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "X-User-Idヘッダーが不正です"})
+		return
+	}
+
+	results, err := h.getUC.ExecuteGetPlanned(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, response.NewIncomeListResponse(results))
+}
+
+// GET /api/incomes/date?from=2026-04-01&to=2026-04-30
+func (h *IncomeHandler) GetByDateRange(c *gin.Context) {
 	userID, err := extractUserID(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "X-User-Idヘッダーが不正です"})
@@ -105,26 +121,26 @@ func (h *ExpenseHandler) GetByDateRange(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, response.NewExpenseListResponse(results))
+	c.JSON(http.StatusOK, response.NewIncomeListResponse(results))
 }
 
-// POST /api/expenses
-func (h *ExpenseHandler) Create(c *gin.Context) {
+// POST /api/incomes
+func (h *IncomeHandler) Create(c *gin.Context) {
 	userID, err := extractUserID(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "X-User-Idヘッダーが不正です"})
 		return
 	}
 
-	var req request.CreateExpenseRequest
+	var req request.CreateIncomeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	expenseDate, err := time.Parse("2006-01-02", req.ExpenseDate)
+	incomeDate, err := time.Parse("2006-01-02", req.IncomeDate)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "日付の形式が不正です（例: 2026-04-14）"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "incomeDateの形式が不正です（例: 2026-04-14）"})
 		return
 	}
 
@@ -134,14 +150,21 @@ func (h *ExpenseHandler) Create(c *gin.Context) {
 		return
 	}
 
-	cmd := dto.CreateExpenseCommand{
-		UserID:        userID,
-		CategoryID:    categoryID,
-		Amount:        req.Amount,
-		Description:   req.Description,
-		ExpenseDate:   expenseDate,
-		PaymentMethod: req.PaymentMethod,
-		Memo:          req.Memo,
+	plannedDate, err := parseOptionalDate(req.PlannedDate)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "plannedDateの形式が不正です（例: 2026-05-25）"})
+		return
+	}
+
+	cmd := dto.CreateIncomeCommand{
+		UserID:      userID,
+		CategoryID:  categoryID,
+		Amount:      req.Amount,
+		Description: req.Description,
+		IncomeDate:  incomeDate,
+		Memo:        req.Memo,
+		IsPlanned:   req.IsPlanned,
+		PlannedDate: plannedDate,
 	}
 
 	result, err := h.createUC.Execute(c.Request.Context(), cmd)
@@ -154,11 +177,11 @@ func (h *ExpenseHandler) Create(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, response.NewExpenseResponse(result))
+	c.JSON(http.StatusCreated, response.NewIncomeResponse(result))
 }
 
-// PUT /api/expenses/:id
-func (h *ExpenseHandler) Update(c *gin.Context) {
+// PUT /api/incomes/:id
+func (h *IncomeHandler) Update(c *gin.Context) {
 	userID, err := extractUserID(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "X-User-Idヘッダーが不正です"})
@@ -171,15 +194,15 @@ func (h *ExpenseHandler) Update(c *gin.Context) {
 		return
 	}
 
-	var req request.UpdateExpenseRequest
+	var req request.UpdateIncomeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	expenseDate, err := time.Parse("2006-01-02", req.ExpenseDate)
+	incomeDate, err := time.Parse("2006-01-02", req.IncomeDate)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "日付の形式が不正です（例: 2026-04-14）"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "incomeDateの形式が不正です（例: 2026-04-14）"})
 		return
 	}
 
@@ -189,15 +212,22 @@ func (h *ExpenseHandler) Update(c *gin.Context) {
 		return
 	}
 
-	cmd := dto.UpdateExpenseCommand{
-		ID:            id,
-		UserID:        userID,
-		CategoryID:    categoryID,
-		Amount:        req.Amount,
-		Description:   req.Description,
-		ExpenseDate:   expenseDate,
-		PaymentMethod: req.PaymentMethod,
-		Memo:          req.Memo,
+	plannedDate, err := parseOptionalDate(req.PlannedDate)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "plannedDateの形式が不正です（例: 2026-05-25）"})
+		return
+	}
+
+	cmd := dto.UpdateIncomeCommand{
+		ID:          id,
+		UserID:      userID,
+		CategoryID:  categoryID,
+		Amount:      req.Amount,
+		Description: req.Description,
+		IncomeDate:  incomeDate,
+		Memo:        req.Memo,
+		IsPlanned:   req.IsPlanned,
+		PlannedDate: plannedDate,
 	}
 
 	result, err := h.updateUC.Execute(c.Request.Context(), cmd)
@@ -214,11 +244,11 @@ func (h *ExpenseHandler) Update(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, response.NewExpenseResponse(result))
+	c.JSON(http.StatusOK, response.NewIncomeResponse(result))
 }
 
-// DELETE /api/expenses/:id
-func (h *ExpenseHandler) Delete(c *gin.Context) {
+// DELETE /api/incomes/:id
+func (h *IncomeHandler) Delete(c *gin.Context) {
 	userID, err := extractUserID(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "X-User-Idヘッダーが不正です"})
@@ -241,39 +271,4 @@ func (h *ExpenseHandler) Delete(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusNoContent, nil)
-}
-
-// -------------------- ヘルパー --------------------
-
-func extractUserID(c *gin.Context) (uuid.UUID, error) {
-	return uuid.Parse(c.GetHeader("X-User-Id"))
-}
-
-func parseOptionalUUID(s *string) (*uuid.UUID, error) {
-	if s == nil {
-		return nil, nil
-	}
-	id, err := uuid.Parse(*s)
-	if err != nil {
-		return nil, err
-	}
-	return &id, nil
-}
-
-func isDomainError(err error, code domainerror.ErrorCode) bool {
-	if de, ok := err.(*domainerror.DomainError); ok {
-		return de.Code == code
-	}
-	return false
-}
-
-func parseOptionalDate(s *string) (*time.Time, error) {
-	if s == nil {
-		return nil, nil
-	}
-	t, err := time.Parse("2006-01-02", *s)
-	if err != nil {
-		return nil, err
-	}
-	return &t, nil
 }

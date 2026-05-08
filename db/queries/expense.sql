@@ -8,6 +8,8 @@ SELECT
     e.expense_date,
     e.payment_method,
     e.memo,
+    e.is_planned,
+    e.planned_date,
     e.created_at,
     e.updated_at,
     c.name AS category_name
@@ -25,13 +27,35 @@ SELECT
     e.expense_date,
     e.payment_method,
     e.memo,
+    e.is_planned,
+    e.planned_date,
     e.created_at,
     e.updated_at,
     c.name AS category_name
 FROM expenses e
 LEFT JOIN categories c ON e.category_id = c.id
-WHERE e.user_id = $1
+WHERE e.user_id = $1 AND e.is_planned = FALSE
 ORDER BY e.expense_date DESC;
+
+-- name: ListPlannedExpenses :many
+SELECT
+    e.id,
+    e.user_id,
+    e.category_id,
+    e.amount,
+    e.description,
+    e.expense_date,
+    e.payment_method,
+    e.memo,
+    e.is_planned,
+    e.planned_date,
+    e.created_at,
+    e.updated_at,
+    c.name AS category_name
+FROM expenses e
+         LEFT JOIN categories c ON e.category_id = c.id
+WHERE e.user_id = $1 AND e.is_planned = TRUE
+ORDER BY e.planned_date ASC;
 
 -- name: ListExpensesByDateRange :many
 SELECT
@@ -43,12 +67,15 @@ SELECT
     e.expense_date,
     e.payment_method,
     e.memo,
+    e.is_planned,
+    e.planned_date,
     e.created_at,
     e.updated_at,
     c.name AS category_name
 FROM expenses e
          LEFT JOIN categories c ON e.category_id = c.id
 WHERE e.user_id = $1
+  AND e.is_planned = FALSE
   AND e.expense_date BETWEEN $2 AND $3
 ORDER BY e.expense_date DESC;
 
@@ -60,9 +87,11 @@ INSERT INTO expenses (
     description,
     expense_date,
     payment_method,
-    memo
+    memo,
+    is_planned,
+    planned_date
 ) VALUES (
-             $1, $2, $3, $4, $5, $6, $7
+             $1, $2, $3, $4, $5, $6, $7, $8, $9
          )
     RETURNING *;
 
@@ -74,8 +103,10 @@ UPDATE expenses SET
                     expense_date   = $4,
                     payment_method = $5,
                     memo           = $6,
+                    is_planned     = $7,
+                    planned_date   = $8,
                     updated_at     = CURRENT_TIMESTAMP
-WHERE id = $7 AND user_id = $8
+WHERE id = $9 AND user_id = $10
     RETURNING *;
 
 -- name: DeleteExpense :exec

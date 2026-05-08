@@ -30,6 +30,8 @@ type Expense struct {
 	Memo          *string          `json:"memo"`
 	CreatedAt     pgtype.Timestamp `json:"created_at"`
 	UpdatedAt     pgtype.Timestamp `json:"updated_at"`
+	IsPlanned     bool             `json:"is_planned"`
+	PlannedDate   pgtype.Date      `json:"planned_date"`
 }
 
 type Income struct {
@@ -42,6 +44,8 @@ type Income struct {
 	Memo        *string          `json:"memo"`
 	CreatedAt   pgtype.Timestamp `json:"created_at"`
 	UpdatedAt   pgtype.Timestamp `json:"updated_at"`
+	IsPlanned   bool             `json:"is_planned"`
+	PlannedDate pgtype.Date      `json:"planned_date"`
 }
 
 type User struct {

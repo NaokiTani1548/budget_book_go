@@ -2,6 +2,7 @@ package entity
 
 import (
 	"time"
+
 	"github.com/google/uuid"
 )
 
@@ -13,8 +14,11 @@ type Income struct {
 	Description  *string
 	IncomeDate   time.Time
 	Memo         *string
+	IsPlanned    bool
+	PlannedDate  *time.Time
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 
+	// JOIN結果
 	CategoryName *string
 }

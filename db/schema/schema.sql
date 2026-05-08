@@ -33,10 +33,13 @@ CREATE TABLE expenses (
                           memo TEXT,
                           created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                           updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                          is_planned BOOLEAN NOT NULL DEFAULT FALSE,
+                          planned_date DATE,
                           CONSTRAINT chk_expenses_amount CHECK (amount > 0),
                           CONSTRAINT chk_expenses_payment_method CHECK (
                               payment_method IS NULL OR payment_method IN ('CASH', 'CREDIT_CARD')
                               )
+
 );
 
 CREATE TABLE incomes (
@@ -49,5 +52,7 @@ CREATE TABLE incomes (
                          memo TEXT,
                          created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                          updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                         is_planned BOOLEAN NOT NULL DEFAULT FALSE,
+                         planned_date DATE,
                          CONSTRAINT chk_incomes_amount CHECK (amount > 0)
 );

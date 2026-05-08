@@ -1,0 +1,7 @@
+ALTER TABLE expenses
+    ADD COLUMN is_planned BOOLEAN NOT NULL DEFAULT FALSE,
+    ADD COLUMN planned_date DATE;
+
+ALTER TABLE incomes
+    ADD COLUMN is_planned BOOLEAN NOT NULL DEFAULT FALSE,
+    ADD COLUMN planned_date DATE;

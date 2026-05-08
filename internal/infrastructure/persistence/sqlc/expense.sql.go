@@ -19,11 +19,13 @@ INSERT INTO expenses (
     description,
     expense_date,
     payment_method,
-    memo
+    memo,
+    is_planned,
+    planned_date
 ) VALUES (
-             $1, $2, $3, $4, $5, $6, $7
+             $1, $2, $3, $4, $5, $6, $7, $8, $9
          )
-    RETURNING id, user_id, category_id, amount, description, expense_date, payment_method, memo, created_at, updated_at
+    RETURNING id, user_id, category_id, amount, description, expense_date, payment_method, memo, created_at, updated_at, is_planned, planned_date
 `
 
 type CreateExpenseParams struct {
@@ -34,6 +36,8 @@ type CreateExpenseParams struct {
 	ExpenseDate   pgtype.Date    `json:"expense_date"`
 	PaymentMethod *string        `json:"payment_method"`
 	Memo          *string        `json:"memo"`
+	IsPlanned     bool           `json:"is_planned"`
+	PlannedDate   pgtype.Date    `json:"planned_date"`
 }
 
 func (q *Queries) CreateExpense(ctx context.Context, arg CreateExpenseParams) (Expense, error) {
@@ -45,6 +49,8 @@ func (q *Queries) CreateExpense(ctx context.Context, arg CreateExpenseParams) (E
 		arg.ExpenseDate,
 		arg.PaymentMethod,
 		arg.Memo,
+		arg.IsPlanned,
+		arg.PlannedDate,
 	)
 	var i Expense
 	err := row.Scan(
@@ -58,6 +64,8 @@ func (q *Queries) CreateExpense(ctx context.Context, arg CreateExpenseParams) (E
 		&i.Memo,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.IsPlanned,
+		&i.PlannedDate,
 	)
 	return i, err
 }
@@ -87,6 +95,8 @@ SELECT
     e.expense_date,
     e.payment_method,
     e.memo,
+    e.is_planned,
+    e.planned_date,
     e.created_at,
     e.updated_at,
     c.name AS category_name
@@ -109,6 +119,8 @@ type GetExpenseRow struct {
 	ExpenseDate   pgtype.Date      `json:"expense_date"`
 	PaymentMethod *string          `json:"payment_method"`
 	Memo          *string          `json:"memo"`
+	IsPlanned     bool             `json:"is_planned"`
+	PlannedDate   pgtype.Date      `json:"planned_date"`
 	CreatedAt     pgtype.Timestamp `json:"created_at"`
 	UpdatedAt     pgtype.Timestamp `json:"updated_at"`
 	CategoryName  *string          `json:"category_name"`
@@ -126,6 +138,8 @@ func (q *Queries) GetExpense(ctx context.Context, arg GetExpenseParams) (GetExpe
 		&i.ExpenseDate,
 		&i.PaymentMethod,
 		&i.Memo,
+		&i.IsPlanned,
+		&i.PlannedDate,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.CategoryName,
@@ -143,12 +157,14 @@ SELECT
     e.expense_date,
     e.payment_method,
     e.memo,
+    e.is_planned,
+    e.planned_date,
     e.created_at,
     e.updated_at,
     c.name AS category_name
 FROM expenses e
 LEFT JOIN categories c ON e.category_id = c.id
-WHERE e.user_id = $1
+WHERE e.user_id = $1 AND e.is_planned = FALSE
 ORDER BY e.expense_date DESC
 `
 
@@ -161,6 +177,8 @@ type ListExpensesRow struct {
 	ExpenseDate   pgtype.Date      `json:"expense_date"`
 	PaymentMethod *string          `json:"payment_method"`
 	Memo          *string          `json:"memo"`
+	IsPlanned     bool             `json:"is_planned"`
+	PlannedDate   pgtype.Date      `json:"planned_date"`
 	CreatedAt     pgtype.Timestamp `json:"created_at"`
 	UpdatedAt     pgtype.Timestamp `json:"updated_at"`
 	CategoryName  *string          `json:"category_name"`
@@ -184,6 +202,8 @@ func (q *Queries) ListExpenses(ctx context.Context, userID pgtype.UUID) ([]ListE
 			&i.ExpenseDate,
 			&i.PaymentMethod,
 			&i.Memo,
+			&i.IsPlanned,
+			&i.PlannedDate,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.CategoryName,
@@ -208,12 +228,15 @@ SELECT
     e.expense_date,
     e.payment_method,
     e.memo,
+    e.is_planned,
+    e.planned_date,
     e.created_at,
     e.updated_at,
     c.name AS category_name
 FROM expenses e
          LEFT JOIN categories c ON e.category_id = c.id
 WHERE e.user_id = $1
+  AND e.is_planned = FALSE
   AND e.expense_date BETWEEN $2 AND $3
 ORDER BY e.expense_date DESC
 `
@@ -233,6 +256,8 @@ type ListExpensesByDateRangeRow struct {
 	ExpenseDate   pgtype.Date      `json:"expense_date"`
 	PaymentMethod *string          `json:"payment_method"`
 	Memo          *string          `json:"memo"`
+	IsPlanned     bool             `json:"is_planned"`
+	PlannedDate   pgtype.Date      `json:"planned_date"`
 	CreatedAt     pgtype.Timestamp `json:"created_at"`
 	UpdatedAt     pgtype.Timestamp `json:"updated_at"`
 	CategoryName  *string          `json:"category_name"`
@@ -256,6 +281,79 @@ func (q *Queries) ListExpensesByDateRange(ctx context.Context, arg ListExpensesB
 			&i.ExpenseDate,
 			&i.PaymentMethod,
 			&i.Memo,
+			&i.IsPlanned,
+			&i.PlannedDate,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.CategoryName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPlannedExpenses = `-- name: ListPlannedExpenses :many
+SELECT
+    e.id,
+    e.user_id,
+    e.category_id,
+    e.amount,
+    e.description,
+    e.expense_date,
+    e.payment_method,
+    e.memo,
+    e.is_planned,
+    e.planned_date,
+    e.created_at,
+    e.updated_at,
+    c.name AS category_name
+FROM expenses e
+         LEFT JOIN categories c ON e.category_id = c.id
+WHERE e.user_id = $1 AND e.is_planned = TRUE
+ORDER BY e.planned_date ASC
+`
+
+type ListPlannedExpensesRow struct {
+	ID            pgtype.UUID      `json:"id"`
+	UserID        pgtype.UUID      `json:"user_id"`
+	CategoryID    pgtype.UUID      `json:"category_id"`
+	Amount        pgtype.Numeric   `json:"amount"`
+	Description   *string          `json:"description"`
+	ExpenseDate   pgtype.Date      `json:"expense_date"`
+	PaymentMethod *string          `json:"payment_method"`
+	Memo          *string          `json:"memo"`
+	IsPlanned     bool             `json:"is_planned"`
+	PlannedDate   pgtype.Date      `json:"planned_date"`
+	CreatedAt     pgtype.Timestamp `json:"created_at"`
+	UpdatedAt     pgtype.Timestamp `json:"updated_at"`
+	CategoryName  *string          `json:"category_name"`
+}
+
+func (q *Queries) ListPlannedExpenses(ctx context.Context, userID pgtype.UUID) ([]ListPlannedExpensesRow, error) {
+	rows, err := q.db.Query(ctx, listPlannedExpenses, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListPlannedExpensesRow
+	for rows.Next() {
+		var i ListPlannedExpensesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.CategoryID,
+			&i.Amount,
+			&i.Description,
+			&i.ExpenseDate,
+			&i.PaymentMethod,
+			&i.Memo,
+			&i.IsPlanned,
+			&i.PlannedDate,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.CategoryName,
@@ -278,9 +376,11 @@ UPDATE expenses SET
                     expense_date   = $4,
                     payment_method = $5,
                     memo           = $6,
+                    is_planned     = $7,
+                    planned_date   = $8,
                     updated_at     = CURRENT_TIMESTAMP
-WHERE id = $7 AND user_id = $8
-    RETURNING id, user_id, category_id, amount, description, expense_date, payment_method, memo, created_at, updated_at
+WHERE id = $9 AND user_id = $10
+    RETURNING id, user_id, category_id, amount, description, expense_date, payment_method, memo, created_at, updated_at, is_planned, planned_date
 `
 
 type UpdateExpenseParams struct {
@@ -290,6 +390,8 @@ type UpdateExpenseParams struct {
 	ExpenseDate   pgtype.Date    `json:"expense_date"`
 	PaymentMethod *string        `json:"payment_method"`
 	Memo          *string        `json:"memo"`
+	IsPlanned     bool           `json:"is_planned"`
+	PlannedDate   pgtype.Date    `json:"planned_date"`
 	ID            pgtype.UUID    `json:"id"`
 	UserID        pgtype.UUID    `json:"user_id"`
 }
@@ -302,6 +404,8 @@ func (q *Queries) UpdateExpense(ctx context.Context, arg UpdateExpenseParams) (E
 		arg.ExpenseDate,
 		arg.PaymentMethod,
 		arg.Memo,
+		arg.IsPlanned,
+		arg.PlannedDate,
 		arg.ID,
 		arg.UserID,
 	)
@@ -317,6 +421,8 @@ func (q *Queries) UpdateExpense(ctx context.Context, arg UpdateExpenseParams) (E
 		&i.Memo,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.IsPlanned,
+		&i.PlannedDate,
 	)
 	return i, err
 }

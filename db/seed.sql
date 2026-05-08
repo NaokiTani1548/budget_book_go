@@ -4,11 +4,11 @@ INSERT INTO users (id, email, password_hash, provider, name) VALUES
 
 -- カテゴリ（支出）
 INSERT INTO categories (id, user_id, name, type, color, sort_order, is_default) VALUES
-                                                                                    ('aaaaaaaa-0001-0001-0001-aaaaaaaaaaaa', '11111111-1111-1111-1111-111111111111', '食費',       'EXPENSE', '#FF6384', 1, TRUE),
-                                                                                    ('aaaaaaaa-0002-0002-0002-aaaaaaaaaaaa', '11111111-1111-1111-1111-111111111111', '交通費',     'EXPENSE', '#36A2EB', 2, TRUE),
-                                                                                    ('aaaaaaaa-0003-0003-0003-aaaaaaaaaaaa', '11111111-1111-1111-1111-111111111111', '日用品',     'EXPENSE', '#FFCE56', 3, TRUE),
-                                                                                    ('aaaaaaaa-0004-0004-0004-aaaaaaaaaaaa', '11111111-1111-1111-1111-111111111111', '娯楽',       'EXPENSE', '#4BC0C0', 4, TRUE),
-                                                                                    ('aaaaaaaa-0005-0005-0005-aaaaaaaaaaaa', '11111111-1111-1111-1111-111111111111', '光熱費',     'EXPENSE', '#9966FF', 5, TRUE);
+                                                                                    ('aaaaaaaa-0001-0001-0001-aaaaaaaaaaaa', '11111111-1111-1111-1111-111111111111', '食費',   'EXPENSE', '#FF6384', 1, TRUE),
+                                                                                    ('aaaaaaaa-0002-0002-0002-aaaaaaaaaaaa', '11111111-1111-1111-1111-111111111111', '交通費', 'EXPENSE', '#36A2EB', 2, TRUE),
+                                                                                    ('aaaaaaaa-0003-0003-0003-aaaaaaaaaaaa', '11111111-1111-1111-1111-111111111111', '日用品', 'EXPENSE', '#FFCE56', 3, TRUE),
+                                                                                    ('aaaaaaaa-0004-0004-0004-aaaaaaaaaaaa', '11111111-1111-1111-1111-111111111111', '娯楽',   'EXPENSE', '#4BC0C0', 4, TRUE),
+                                                                                    ('aaaaaaaa-0005-0005-0005-aaaaaaaaaaaa', '11111111-1111-1111-1111-111111111111', '光熱費', 'EXPENSE', '#9966FF', 5, TRUE);
 
 -- カテゴリ（収入）
 INSERT INTO categories (id, user_id, name, type, color, sort_order, is_default) VALUES
@@ -16,16 +16,28 @@ INSERT INTO categories (id, user_id, name, type, color, sort_order, is_default) 
                                                                                     ('bbbbbbbb-0002-0002-0002-bbbbbbbbbbbb', '11111111-1111-1111-1111-111111111111', '副業',       'INCOME', '#8BC34A', 2, TRUE),
                                                                                     ('bbbbbbbb-0003-0003-0003-bbbbbbbbbbbb', '11111111-1111-1111-1111-111111111111', 'その他収入', 'INCOME', '#CDDC39', 3, TRUE);
 
--- 支出
-INSERT INTO expenses (user_id, category_id, amount, description, expense_date, payment_method, memo) VALUES
-                                                                                                         ('11111111-1111-1111-1111-111111111111', 'aaaaaaaa-0001-0001-0001-aaaaaaaaaaaa', 1500.00, 'ランチ代',         '2026-04-14', 'CASH',        '同僚と'),
-                                                                                                         ('11111111-1111-1111-1111-111111111111', 'aaaaaaaa-0001-0001-0001-aaaaaaaaaaaa', 3200.00, '夕食（外食）',     '2026-04-15', 'CREDIT_CARD', NULL),
-                                                                                                         ('11111111-1111-1111-1111-111111111111', 'aaaaaaaa-0002-0002-0002-aaaaaaaaaaaa',  230.00, '電車代',           '2026-04-15', 'CASH',        NULL),
-                                                                                                         ('11111111-1111-1111-1111-111111111111', 'aaaaaaaa-0003-0003-0003-aaaaaaaaaaaa', 1980.00, 'シャンプー等',     '2026-04-16', 'CREDIT_CARD', 'ドラッグストア'),
-                                                                                                         ('11111111-1111-1111-1111-111111111111', 'aaaaaaaa-0004-0004-0004-aaaaaaaaaaaa', 2000.00, '映画チケット',     '2026-04-17', 'CREDIT_CARD', NULL),
-                                                                                                         ('11111111-1111-1111-1111-111111111111', 'aaaaaaaa-0005-0005-0005-aaaaaaaaaaaa', 8500.00, '電気代',           '2026-04-18', 'CREDIT_CARD', '4月分');
+-- 実績支出
+INSERT INTO expenses (user_id, category_id, amount, description, expense_date, payment_method, memo, is_planned, planned_date) VALUES
+                                                                                                                                   ('11111111-1111-1111-1111-111111111111', 'aaaaaaaa-0001-0001-0001-aaaaaaaaaaaa', 1500.00, 'ランチ代',     '2026-04-14', 'CASH',        '同僚と',         FALSE, NULL),
+                                                                                                                                   ('11111111-1111-1111-1111-111111111111', 'aaaaaaaa-0001-0001-0001-aaaaaaaaaaaa', 3200.00, '夕食（外食）', '2026-04-15', 'CREDIT_CARD', NULL,             FALSE, NULL),
+                                                                                                                                   ('11111111-1111-1111-1111-111111111111', 'aaaaaaaa-0002-0002-0002-aaaaaaaaaaaa',  230.00, '電車代',       '2026-04-15', 'CASH',        NULL,             FALSE, NULL),
+                                                                                                                                   ('11111111-1111-1111-1111-111111111111', 'aaaaaaaa-0003-0003-0003-aaaaaaaaaaaa', 1980.00, 'シャンプー等', '2026-04-16', 'CREDIT_CARD', 'ドラッグストア', FALSE, NULL),
+                                                                                                                                   ('11111111-1111-1111-1111-111111111111', 'aaaaaaaa-0004-0004-0004-aaaaaaaaaaaa', 2000.00, '映画チケット', '2026-04-17', 'CREDIT_CARD', NULL,             FALSE, NULL),
+                                                                                                                                   ('11111111-1111-1111-1111-111111111111', 'aaaaaaaa-0005-0005-0005-aaaaaaaaaaaa', 8500.00, '電気代',       '2026-04-18', 'CREDIT_CARD', '4月分',          FALSE, NULL);
 
--- 収入
-INSERT INTO incomes (user_id, category_id, amount, description, income_date, memo) VALUES
-                                                                                       ('11111111-1111-1111-1111-111111111111', 'bbbbbbbb-0001-0001-0001-bbbbbbbbbbbb', 280000.00, '4月給与',   '2026-04-25', NULL),
-                                                                                       ('11111111-1111-1111-1111-111111111111', 'bbbbbbbb-0002-0002-0002-bbbbbbbbbbbb',  50000.00, 'フリーランス案件', '2026-04-20', 'A社');
+-- 予定支出
+INSERT INTO expenses (user_id, category_id, amount, description, expense_date, payment_method, memo, is_planned, planned_date) VALUES
+                                                                                                                                   ('11111111-1111-1111-1111-111111111111', 'aaaaaaaa-0005-0005-0005-aaaaaaaaaaaa', 8500.00, '電気代（予定）',   '2026-05-18', 'CREDIT_CARD', '5月分', TRUE, '2026-05-18'),
+                                                                                                                                   ('11111111-1111-1111-1111-111111111111', 'aaaaaaaa-0002-0002-0002-aaaaaaaaaaaa', 6000.00, '定期代（予定）',   '2026-06-01', 'CREDIT_CARD', NULL,    TRUE, '2026-06-01'),
+                                                                                                                                   ('11111111-1111-1111-1111-111111111111', 'aaaaaaaa-0001-0001-0001-aaaaaaaaaaaa', 5000.00, '食費予算（予定）', '2026-06-30', 'CASH',        NULL,    TRUE, '2026-06-30');
+
+-- 実績収入
+INSERT INTO incomes (user_id, category_id, amount, description, income_date, memo, is_planned, planned_date) VALUES
+                                                                                                                 ('11111111-1111-1111-1111-111111111111', 'bbbbbbbb-0001-0001-0001-bbbbbbbbbbbb', 280000.00, '4月給与',         '2026-04-25', NULL,   FALSE, NULL),
+                                                                                                                 ('11111111-1111-1111-1111-111111111111', 'bbbbbbbb-0002-0002-0002-bbbbbbbbbbbb',  50000.00, 'フリーランス案件', '2026-04-20', 'A社', FALSE, NULL);
+
+-- 予定収入
+INSERT INTO incomes (user_id, category_id, amount, description, income_date, memo, is_planned, planned_date) VALUES
+                                                                                                                 ('11111111-1111-1111-1111-111111111111', 'bbbbbbbb-0001-0001-0001-bbbbbbbbbbbb', 280000.00, '5月給与（予定）', '2026-05-25', NULL,   TRUE, '2026-05-25'),
+                                                                                                                 ('11111111-1111-1111-1111-111111111111', 'bbbbbbbb-0001-0001-0001-bbbbbbbbbbbb', 280000.00, '6月給与（予定）', '2026-06-25', NULL,   TRUE, '2026-06-25'),
+                                                                                                                 ('11111111-1111-1111-1111-111111111111', 'bbbbbbbb-0002-0002-0002-bbbbbbbbbbbb',  30000.00, '副業（予定）',    '2026-06-15', 'B社', TRUE, '2026-06-15');
