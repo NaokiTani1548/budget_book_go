@@ -14,6 +14,8 @@ type CreateExpenseCommand struct {
 	ExpenseDate   time.Time
 	PaymentMethod *string
 	Memo          *string
+	IsPlanned   bool
+	PlannedDate *time.Time
 }
 
 type UpdateExpenseCommand struct {
@@ -25,6 +27,8 @@ type UpdateExpenseCommand struct {
 	ExpenseDate   time.Time
 	PaymentMethod *string
 	Memo          *string
+	IsPlanned   bool
+	PlannedDate *time.Time
 }
 
 type ExpenseResult struct {
@@ -39,5 +43,7 @@ type ExpenseResult struct {
 	Memo          *string
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
+	IsPlanned   bool
+	PlannedDate *time.Time
 }
 

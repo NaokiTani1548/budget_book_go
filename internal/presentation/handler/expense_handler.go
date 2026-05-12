@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log"
 	"net/http"
 	"time"
 
@@ -44,6 +45,23 @@ func (h *ExpenseHandler) GetAll(c *gin.Context) {
 	}
 
 	results, err := h.getUC.ExecuteGetByUserID(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, response.NewExpenseListResponse(results))
+}
+
+// GET /api/expenses/planned
+func (h *ExpenseHandler) GetPlanned(c *gin.Context) {
+	userID, err := extractUserID(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "X-User-Idヘッダーが不正です"})
+		return
+	}
+
+	results, err := h.getUC.ExecuteGetPlanned(c.Request.Context(), userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -134,6 +152,14 @@ func (h *ExpenseHandler) Create(c *gin.Context) {
 		return
 	}
 
+	plannedDate, err := parseOptionalDate(req.PlannedDate)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "plannedDateの形式が不正です（例: 2026-05-18）"})
+		return
+	}
+
+	log.Printf("isPlanned: %v, plannedDate: %v", req.IsPlanned, req.PlannedDate)
+
 	cmd := dto.CreateExpenseCommand{
 		UserID:        userID,
 		CategoryID:    categoryID,
@@ -142,6 +168,8 @@ func (h *ExpenseHandler) Create(c *gin.Context) {
 		ExpenseDate:   expenseDate,
 		PaymentMethod: req.PaymentMethod,
 		Memo:          req.Memo,
+		IsPlanned:     req.IsPlanned,
+		PlannedDate:   plannedDate,
 	}
 
 	result, err := h.createUC.Execute(c.Request.Context(), cmd)
@@ -189,6 +217,12 @@ func (h *ExpenseHandler) Update(c *gin.Context) {
 		return
 	}
 
+	plannedDate, err := parseOptionalDate(req.PlannedDate)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "plannedDateの形式が不正です（例: 2026-05-18）"})
+		return
+	}
+
 	cmd := dto.UpdateExpenseCommand{
 		ID:            id,
 		UserID:        userID,
@@ -198,6 +232,8 @@ func (h *ExpenseHandler) Update(c *gin.Context) {
 		ExpenseDate:   expenseDate,
 		PaymentMethod: req.PaymentMethod,
 		Memo:          req.Memo,
+		IsPlanned:     req.IsPlanned,
+		PlannedDate:   plannedDate,
 	}
 
 	result, err := h.updateUC.Execute(c.Request.Context(), cmd)

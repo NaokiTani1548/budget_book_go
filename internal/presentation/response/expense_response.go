@@ -17,11 +17,18 @@ type ExpenseResponse struct {
 	Description   *string    `json:"description"`
 	PaymentMethod *string    `json:"paymentMethod"`
 	Memo          *string    `json:"memo"`
+	IsPlanned     bool       `json:"isPlanned"`
+	PlannedDate   *string    `json:"plannedDate"`
 	CreatedAt     time.Time  `json:"createdAt"`
 	UpdatedAt     time.Time  `json:"updatedAt"`
 }
 
 func NewExpenseResponse(result *dto.ExpenseResult) ExpenseResponse {
+	var plannedDate *string
+	if result.PlannedDate != nil {
+		s := result.PlannedDate.Format("2006-01-02")
+		plannedDate = &s
+	}
 	return ExpenseResponse{
 		ID:            result.ID,
 		Amount:        result.Amount,
@@ -31,6 +38,8 @@ func NewExpenseResponse(result *dto.ExpenseResult) ExpenseResponse {
 		Description:   result.Description,
 		PaymentMethod: result.PaymentMethod,
 		Memo:          result.Memo,
+		IsPlanned:     result.IsPlanned,
+		PlannedDate:   plannedDate,
 		CreatedAt:     result.CreatedAt,
 		UpdatedAt:     result.UpdatedAt,
 	}

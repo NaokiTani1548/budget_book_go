@@ -300,7 +300,7 @@ SELECT
     c.name AS category_name
 FROM incomes i
          LEFT JOIN categories c ON i.category_id = c.id
-WHERE i.user_id = $1 AND i.is_planned = TRUE
+WHERE i.user_id = $1 AND i.is_planned = TRUE AND i.planned_date > CURRENT_DATE
 ORDER BY i.planned_date ASC
 `
 

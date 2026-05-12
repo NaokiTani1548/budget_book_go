@@ -74,6 +74,7 @@ func main() {
 		expenses := api.Group("/expenses")
 		{
 			expenses.GET("",      expenseHandler.GetAll)
+			expenses.GET("/planned",  expenseHandler.GetPlanned)
 			expenses.GET("/date", expenseHandler.GetByDateRange)
 			expenses.GET("/:id",  expenseHandler.GetByID)
 			expenses.POST("",     expenseHandler.Create)

@@ -54,7 +54,7 @@ SELECT
     c.name AS category_name
 FROM expenses e
          LEFT JOIN categories c ON e.category_id = c.id
-WHERE e.user_id = $1 AND e.is_planned = TRUE
+WHERE e.user_id = $1 AND e.is_planned = TRUE AND e.planned_date > CURRENT_DATE
 ORDER BY e.planned_date ASC;
 
 -- name: ListExpensesByDateRange :many

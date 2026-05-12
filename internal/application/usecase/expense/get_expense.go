@@ -51,3 +51,15 @@ func (uc *GetExpenseUseCase) ExecuteGetByDateRange(ctx context.Context, userID u
 	}
 	return results, nil
 }
+
+func (uc *GetExpenseUseCase) ExecuteGetPlanned(ctx context.Context, userID uuid.UUID) ([]*dto.ExpenseResult, error) {
+	incomes, err := uc.expenseRepo.FindPlanned(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	results := make([]*dto.ExpenseResult, len(incomes))
+	for i, inc := range incomes {
+		results[i] = toExpenseResult(inc)
+	}
+	return results, nil
+}

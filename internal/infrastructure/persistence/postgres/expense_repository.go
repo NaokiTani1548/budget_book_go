@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"budget-book-go/internal/domain/entity"
@@ -70,7 +71,20 @@ func (r *expenseRepository) FindByDateRange(ctx context.Context, userID uuid.UUI
 	return expenses, nil
 }
 
+func (r *expenseRepository) FindPlanned(ctx context.Context, userID uuid.UUID) ([]*entity.Expense, error) {
+	rows, err := r.queries.ListPlannedExpenses(ctx, uuidToPgtype(userID))
+	if err != nil {
+		return nil, err
+	}
+	expenses := make([]*entity.Expense, len(rows))
+	for i, row := range rows {
+		expenses[i] = listPlannedExpensesRowToEntity(row)
+	}
+	return expenses, nil
+}
+
 func (r *expenseRepository) Save(ctx context.Context, expense *entity.Expense) (*entity.Expense, error) {
+	log.Printf("expense.IsPlanned: %v, expense.PlannedDate: %v", expense.IsPlanned, expense.PlannedDate)
 	row, err := r.queries.CreateExpense(ctx, dbsqlc.CreateExpenseParams{
 		UserID:        uuidToPgtype(expense.UserID),
 		CategoryID:    optionalUuidToPgtype(expense.CategoryID),
@@ -79,6 +93,8 @@ func (r *expenseRepository) Save(ctx context.Context, expense *entity.Expense) (
 		ExpenseDate:   dateToPgtype(expense.ExpenseDate),
 		PaymentMethod: expense.PaymentMethod,
 		Memo:          expense.Memo,
+		IsPlanned:     expense.IsPlanned,
+		PlannedDate:   optionalDateToPgtype(expense.PlannedDate),
 	})
 	if err != nil {
 		return nil, err
@@ -96,6 +112,8 @@ func (r *expenseRepository) Update(ctx context.Context, expense *entity.Expense)
 		ExpenseDate:   dateToPgtype(expense.ExpenseDate),
 		PaymentMethod: expense.PaymentMethod,
 		Memo:          expense.Memo,
+		IsPlanned:     expense.IsPlanned,
+		PlannedDate:   optionalDateToPgtype(expense.PlannedDate),
 	})
 	if err != nil {
 		return nil, domainerror.NewNotFoundError("expense")
@@ -211,7 +229,27 @@ func savedExpenseToEntity(row dbsqlc.Expense) *entity.Expense {
 		ExpenseDate:   row.ExpenseDate.Time,
 		PaymentMethod: row.PaymentMethod,
 		Memo:          row.Memo,
+		IsPlanned:     row.IsPlanned,
+		PlannedDate:   optionalPgtypeToTime(row.PlannedDate),
 		CreatedAt:     row.CreatedAt.Time,
 		UpdatedAt:     row.UpdatedAt.Time,
+	}
+}
+
+func listPlannedExpensesRowToEntity(row dbsqlc.ListPlannedExpensesRow) *entity.Expense {
+	return &entity.Expense{
+		ID:           pgtypeToUUID(row.ID),
+		UserID:       pgtypeToUUID(row.UserID),
+		CategoryID:   optionalPgtypeToUUID(row.CategoryID),
+		Amount:       numericToFloat(row.Amount),
+		Description:  row.Description,
+		ExpenseDate:   row.ExpenseDate.Time,
+		PaymentMethod: row.PaymentMethod,
+		Memo:         row.Memo,
+		IsPlanned:    row.IsPlanned,
+		PlannedDate:  optionalPgtypeToTime(row.PlannedDate),
+		CreatedAt:    row.CreatedAt.Time,
+		UpdatedAt:    row.UpdatedAt.Time,
+		CategoryName: row.CategoryName,
 	}
 }

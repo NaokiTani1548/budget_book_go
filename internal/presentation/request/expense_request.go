@@ -7,6 +7,8 @@ type CreateExpenseRequest struct {
 	Description   *string `json:"description"`
 	PaymentMethod *string `json:"paymentMethod"`
 	Memo          *string `json:"memo"`
+	IsPlanned     bool    `json:"isPlanned"`
+	PlannedDate   *string `json:"plannedDate"`
 }
 
 type UpdateExpenseRequest struct {
@@ -16,4 +18,6 @@ type UpdateExpenseRequest struct {
 	Description   *string `json:"description"`
 	PaymentMethod *string `json:"paymentMethod"`
 	Memo          *string `json:"memo"`
+	IsPlanned     bool    `json:"isPlanned"`
+	PlannedDate   *string `json:"plannedDate"`
 }
