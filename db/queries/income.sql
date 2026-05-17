@@ -7,8 +7,6 @@ SELECT
     i.description,
     i.income_date,
     i.memo,
-    i.is_planned,
-    i.planned_date,
     i.created_at,
     i.updated_at,
     c.name AS category_name
@@ -25,14 +23,12 @@ SELECT
     i.description,
     i.income_date,
     i.memo,
-    i.is_planned,
-    i.planned_date,
     i.created_at,
     i.updated_at,
     c.name AS category_name
 FROM incomes i
          LEFT JOIN categories c ON i.category_id = c.id
-WHERE i.user_id = $1 AND i.is_planned = FALSE
+WHERE i.user_id = $1 AND i.income_date <= CURRENT_DATE
 ORDER BY i.income_date DESC;
 
 -- name: ListPlannedIncomes :many
@@ -44,15 +40,13 @@ SELECT
     i.description,
     i.income_date,
     i.memo,
-    i.is_planned,
-    i.planned_date,
     i.created_at,
     i.updated_at,
     c.name AS category_name
 FROM incomes i
          LEFT JOIN categories c ON i.category_id = c.id
-WHERE i.user_id = $1 AND i.is_planned = TRUE AND i.planned_date > CURRENT_DATE
-ORDER BY i.planned_date ASC;
+WHERE i.user_id = $1 AND i.income_date > CURRENT_DATE
+ORDER BY i.income_date ASC;
 
 -- name: ListIncomesByDateRange :many
 SELECT
@@ -63,15 +57,12 @@ SELECT
     i.description,
     i.income_date,
     i.memo,
-    i.is_planned,
-    i.planned_date,
     i.created_at,
     i.updated_at,
     c.name AS category_name
 FROM incomes i
          LEFT JOIN categories c ON i.category_id = c.id
 WHERE i.user_id = $1
-  AND i.is_planned = FALSE
   AND i.income_date BETWEEN $2 AND $3
 ORDER BY i.income_date DESC;
 
@@ -82,11 +73,9 @@ INSERT INTO incomes (
     amount,
     description,
     income_date,
-    memo,
-    is_planned,
-    planned_date
+    memo
 ) VALUES (
-             $1, $2, $3, $4, $5, $6, $7, $8
+             $1, $2, $3, $4, $5, $6
          )
     RETURNING *;
 
@@ -97,10 +86,8 @@ UPDATE incomes SET
                    description  = $3,
                    income_date  = $4,
                    memo         = $5,
-                   is_planned   = $6,
-                   planned_date = $7,
                    updated_at   = CURRENT_TIMESTAMP
-WHERE id = $8 AND user_id = $9
+WHERE id = $6 AND user_id = $7
     RETURNING *;
 
 -- name: DeleteIncome :exec

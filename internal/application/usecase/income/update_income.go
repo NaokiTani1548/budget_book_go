@@ -33,8 +33,6 @@ func (uc *UpdateIncomeUseCase) Execute(ctx context.Context, cmd dto.UpdateIncome
 	income.Description = cmd.Description
 	income.IncomeDate  = cmd.IncomeDate
 	income.Memo        = cmd.Memo
-	income.IsPlanned   = cmd.IsPlanned
-	income.PlannedDate = cmd.PlannedDate
 
 	updated, err := uc.incomeRepo.Update(ctx, income)
 	if err != nil {

@@ -6,8 +6,6 @@ type CreateIncomeRequest struct {
 	CategoryID  *string `json:"categoryId"`
 	Description *string `json:"description"`
 	Memo        *string `json:"memo"`
-	IsPlanned   bool    `json:"isPlanned"`
-	PlannedDate *string `json:"plannedDate"`
 }
 
 type UpdateIncomeRequest struct {
@@ -16,6 +14,4 @@ type UpdateIncomeRequest struct {
 	CategoryID  *string `json:"categoryId"`
 	Description *string `json:"description"`
 	Memo        *string `json:"memo"`
-	IsPlanned   bool    `json:"isPlanned"`
-	PlannedDate *string `json:"plannedDate"`
 }

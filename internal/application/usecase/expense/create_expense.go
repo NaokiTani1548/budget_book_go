@@ -2,7 +2,6 @@ package expense
 
 import (
 	"context"
-	"log"
 
 	"budget-book-go/internal/application/dto"
 	"budget-book-go/internal/domain/entity"
@@ -25,7 +24,6 @@ func (uc *CreateExpenseUseCase) Execute(ctx context.Context, cmd dto.CreateExpen
 		return nil, domainerror.NewInvalidInputError(err.Error())
 	}
 
-	log.Printf("cmd.IsPlanned: %v, cmd.PlannedDate: %v", cmd.IsPlanned, cmd.PlannedDate)
 	expense := &entity.Expense{
 		UserID:        cmd.UserID,
 		CategoryID:    cmd.CategoryID,
@@ -34,8 +32,6 @@ func (uc *CreateExpenseUseCase) Execute(ctx context.Context, cmd dto.CreateExpen
 		ExpenseDate:   cmd.ExpenseDate,
 		PaymentMethod: cmd.PaymentMethod,
 		Memo:          cmd.Memo,
-		IsPlanned:     cmd.IsPlanned,
-		PlannedDate:   cmd.PlannedDate,
 	}
 	saved, err := uc.expenseRepo.Save(ctx, expense)
 	if err != nil {

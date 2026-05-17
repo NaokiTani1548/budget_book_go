@@ -31,8 +31,6 @@ func (uc *CreateIncomeUseCase) Execute(ctx context.Context, cmd dto.CreateIncome
 		Description: cmd.Description,
 		IncomeDate:  cmd.IncomeDate,
 		Memo:        cmd.Memo,
-		IsPlanned:   cmd.IsPlanned,
-		PlannedDate: cmd.PlannedDate,
 	}
 
 	saved, err := uc.incomeRepo.Save(ctx, income)

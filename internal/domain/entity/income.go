@@ -14,8 +14,6 @@ type Income struct {
 	Description  *string
 	IncomeDate   time.Time
 	Memo         *string
-	IsPlanned    bool
-	PlannedDate  *time.Time
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 

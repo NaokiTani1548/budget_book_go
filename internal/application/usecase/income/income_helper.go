@@ -15,8 +15,6 @@ func toIncomeResult(i *entity.Income) *dto.IncomeResult {
 		Description:  i.Description,
 		IncomeDate:   i.IncomeDate,
 		Memo:         i.Memo,
-		IsPlanned:    i.IsPlanned,
-		PlannedDate:  i.PlannedDate,
 		CreatedAt:    i.CreatedAt,
 		UpdatedAt:    i.UpdatedAt,
 	}

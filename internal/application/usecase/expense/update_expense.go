@@ -37,8 +37,6 @@ func (uc *UpdateExpenseUseCase) Execute(ctx context.Context, cmd dto.UpdateExpen
 	expense.ExpenseDate   = cmd.ExpenseDate
 	expense.PaymentMethod = cmd.PaymentMethod
 	expense.Memo          = cmd.Memo
-	expense.IsPlanned     = cmd.IsPlanned
-	expense.PlannedDate   = cmd.PlannedDate
 
 	updated, err := uc.expenseRepo.Update(ctx, expense)
 	if err != nil {

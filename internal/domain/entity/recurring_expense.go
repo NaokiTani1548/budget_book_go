@@ -6,15 +6,18 @@ import (
 	"github.com/google/uuid"
 )
 
-type Expense struct {
+type RecurringExpense struct {
 	ID            uuid.UUID
 	UserID        uuid.UUID
 	CategoryID    *uuid.UUID
 	Amount        float64
 	Description   *string
-	ExpenseDate   time.Time
 	PaymentMethod *string
 	Memo          *string
+	BillingDay    int
+	StartDate     time.Time
+	EndDate       *time.Time
+	IsActive      bool
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 

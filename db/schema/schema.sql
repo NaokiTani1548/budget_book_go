@@ -33,8 +33,6 @@ CREATE TABLE expenses (
                           memo TEXT,
                           created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                           updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                          is_planned BOOLEAN NOT NULL DEFAULT FALSE,
-                          planned_date DATE,
                           CONSTRAINT chk_expenses_amount CHECK (amount > 0),
                           CONSTRAINT chk_expenses_payment_method CHECK (
                               payment_method IS NULL OR payment_method IN ('CASH', 'CREDIT_CARD')
@@ -52,7 +50,36 @@ CREATE TABLE incomes (
                          memo TEXT,
                          created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                          updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                         is_planned BOOLEAN NOT NULL DEFAULT FALSE,
-                         planned_date DATE,
                          CONSTRAINT chk_incomes_amount CHECK (amount > 0)
+);
+
+CREATE TABLE recurring_expenses (
+                                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                                    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                                    category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
+                                    amount DECIMAL(12, 2) NOT NULL,
+                                    description VARCHAR(500),
+                                    payment_method VARCHAR(50),
+                                    memo TEXT,
+                                    billing_day INTEGER NOT NULL,
+                                    start_date DATE NOT NULL,
+                                    end_date DATE,
+                                    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+                                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                    CONSTRAINT chk_recurring_billing_day CHECK (billing_day BETWEEN 1 AND 31),
+                                    CONSTRAINT chk_recurring_amount CHECK (amount > 0),
+                                    CONSTRAINT chk_recurring_payment_method CHECK (
+                                        payment_method IS NULL OR payment_method IN ('CASH', 'CREDIT_CARD')
+                                        )
+);
+
+CREATE TABLE recurring_expense_logs (
+                                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                                        recurring_expense_id UUID NOT NULL REFERENCES recurring_expenses(id) ON DELETE CASCADE,
+                                        expense_id UUID NOT NULL REFERENCES expenses(id) ON DELETE CASCADE,
+                                        billing_year INTEGER NOT NULL,
+                                        billing_month INTEGER NOT NULL,
+                                        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                        CONSTRAINT uk_recurring_expense_logs UNIQUE (recurring_expense_id, billing_year, billing_month)
 );

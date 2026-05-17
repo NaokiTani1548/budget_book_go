@@ -8,38 +8,50 @@ import (
 	"github.com/google/uuid"
 )
 
-type ExpenseResponse struct {
+type RecurringExpenseResponse struct {
 	ID            uuid.UUID  `json:"id"`
 	Amount        float64    `json:"amount"`
-	ExpenseDate   string     `json:"expenseDate"`
+	BillingDay    int        `json:"billingDay"`
+	StartDate     string     `json:"startDate"`
+	EndDate       *string    `json:"endDate"`
 	CategoryID    *uuid.UUID `json:"categoryId"`
 	CategoryName  *string    `json:"categoryName"`
 	Description   *string    `json:"description"`
 	PaymentMethod *string    `json:"paymentMethod"`
 	Memo          *string    `json:"memo"`
+	IsActive      bool       `json:"isActive"`
 	CreatedAt     time.Time  `json:"createdAt"`
 	UpdatedAt     time.Time  `json:"updatedAt"`
 }
 
-func NewExpenseResponse(result *dto.ExpenseResult) ExpenseResponse {
-	return ExpenseResponse{
+func NewRecurringExpenseResponse(result *dto.RecurringExpenseResult) RecurringExpenseResponse {
+	var endDate *string
+	if result.EndDate != nil {
+		s := result.EndDate.Format("2006-01-02")
+		endDate = &s
+	}
+
+	return RecurringExpenseResponse{
 		ID:            result.ID,
 		Amount:        result.Amount,
-		ExpenseDate:   result.ExpenseDate.Format("2006-01-02"),
+		BillingDay:    result.BillingDay,
+		StartDate:     result.StartDate.Format("2006-01-02"),
+		EndDate:       endDate,
 		CategoryID:    result.CategoryID,
 		CategoryName:  result.CategoryName,
 		Description:   result.Description,
 		PaymentMethod: result.PaymentMethod,
 		Memo:          result.Memo,
+		IsActive:      result.IsActive,
 		CreatedAt:     result.CreatedAt,
 		UpdatedAt:     result.UpdatedAt,
 	}
 }
 
-func NewExpenseListResponse(results []*dto.ExpenseResult) []ExpenseResponse {
-	responses := make([]ExpenseResponse, len(results))
+func NewRecurringExpenseListResponse(results []*dto.RecurringExpenseResult) []RecurringExpenseResponse {
+	responses := make([]RecurringExpenseResponse, len(results))
 	for i, result := range results {
-		responses[i] = NewExpenseResponse(result)
+		responses[i] = NewRecurringExpenseResponse(result)
 	}
 	return responses
 }

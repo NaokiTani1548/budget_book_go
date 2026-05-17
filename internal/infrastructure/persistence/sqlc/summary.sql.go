@@ -14,7 +14,8 @@ import (
 const sumActualExpenses = `-- name: SumActualExpenses :one
 SELECT COALESCE(SUM(amount), 0)::NUMERIC AS total
 FROM expenses
-WHERE user_id = $1 AND is_planned = FALSE
+WHERE user_id = $1
+  AND expense_date <= CURRENT_DATE
 `
 
 func (q *Queries) SumActualExpenses(ctx context.Context, userID pgtype.UUID) (pgtype.Numeric, error) {
@@ -27,7 +28,8 @@ func (q *Queries) SumActualExpenses(ctx context.Context, userID pgtype.UUID) (pg
 const sumActualIncomes = `-- name: SumActualIncomes :one
 SELECT COALESCE(SUM(amount), 0)::NUMERIC AS total
 FROM incomes
-WHERE user_id = $1 AND is_planned = FALSE
+WHERE user_id = $1
+  AND income_date <= CURRENT_DATE
 `
 
 func (q *Queries) SumActualIncomes(ctx context.Context, userID pgtype.UUID) (pgtype.Numeric, error) {
@@ -41,17 +43,17 @@ const sumPlannedExpensesByDate = `-- name: SumPlannedExpensesByDate :one
 SELECT COALESCE(SUM(amount), 0)::NUMERIC AS total
 FROM expenses
 WHERE user_id = $1
-  AND is_planned = TRUE
-  AND planned_date <= $2
+  AND expense_date > CURRENT_DATE
+  AND expense_date <= $2
 `
 
 type SumPlannedExpensesByDateParams struct {
 	UserID      pgtype.UUID `json:"user_id"`
-	PlannedDate pgtype.Date `json:"planned_date"`
+	ExpenseDate pgtype.Date `json:"expense_date"`
 }
 
 func (q *Queries) SumPlannedExpensesByDate(ctx context.Context, arg SumPlannedExpensesByDateParams) (pgtype.Numeric, error) {
-	row := q.db.QueryRow(ctx, sumPlannedExpensesByDate, arg.UserID, arg.PlannedDate)
+	row := q.db.QueryRow(ctx, sumPlannedExpensesByDate, arg.UserID, arg.ExpenseDate)
 	var total pgtype.Numeric
 	err := row.Scan(&total)
 	return total, err
@@ -61,17 +63,17 @@ const sumPlannedIncomesByDate = `-- name: SumPlannedIncomesByDate :one
 SELECT COALESCE(SUM(amount), 0)::NUMERIC AS total
 FROM incomes
 WHERE user_id = $1
-  AND is_planned = TRUE
-  AND planned_date <= $2
+  AND income_date > CURRENT_DATE
+  AND income_date <= $2
 `
 
 type SumPlannedIncomesByDateParams struct {
-	UserID      pgtype.UUID `json:"user_id"`
-	PlannedDate pgtype.Date `json:"planned_date"`
+	UserID     pgtype.UUID `json:"user_id"`
+	IncomeDate pgtype.Date `json:"income_date"`
 }
 
 func (q *Queries) SumPlannedIncomesByDate(ctx context.Context, arg SumPlannedIncomesByDateParams) (pgtype.Numeric, error) {
-	row := q.db.QueryRow(ctx, sumPlannedIncomesByDate, arg.UserID, arg.PlannedDate)
+	row := q.db.QueryRow(ctx, sumPlannedIncomesByDate, arg.UserID, arg.IncomeDate)
 	var total pgtype.Numeric
 	err := row.Scan(&total)
 	return total, err

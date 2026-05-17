@@ -150,12 +150,6 @@ func (h *IncomeHandler) Create(c *gin.Context) {
 		return
 	}
 
-	plannedDate, err := parseOptionalDate(req.PlannedDate)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "plannedDateの形式が不正です（例: 2026-05-25）"})
-		return
-	}
-
 	cmd := dto.CreateIncomeCommand{
 		UserID:      userID,
 		CategoryID:  categoryID,
@@ -163,8 +157,6 @@ func (h *IncomeHandler) Create(c *gin.Context) {
 		Description: req.Description,
 		IncomeDate:  incomeDate,
 		Memo:        req.Memo,
-		IsPlanned:   req.IsPlanned,
-		PlannedDate: plannedDate,
 	}
 
 	result, err := h.createUC.Execute(c.Request.Context(), cmd)
@@ -212,12 +204,6 @@ func (h *IncomeHandler) Update(c *gin.Context) {
 		return
 	}
 
-	plannedDate, err := parseOptionalDate(req.PlannedDate)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "plannedDateの形式が不正です（例: 2026-05-25）"})
-		return
-	}
-
 	cmd := dto.UpdateIncomeCommand{
 		ID:          id,
 		UserID:      userID,
@@ -226,8 +212,6 @@ func (h *IncomeHandler) Update(c *gin.Context) {
 		Description: req.Description,
 		IncomeDate:  incomeDate,
 		Memo:        req.Memo,
-		IsPlanned:   req.IsPlanned,
-		PlannedDate: plannedDate,
 	}
 
 	result, err := h.updateUC.Execute(c.Request.Context(), cmd)

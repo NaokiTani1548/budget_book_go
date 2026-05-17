@@ -41,8 +41,8 @@ func (r *summaryRepository) SumActualExpenses(ctx context.Context, userID uuid.U
 
 func (r *summaryRepository) SumPlannedIncomesByDate(ctx context.Context, userID uuid.UUID, targetDate time.Time) (float64, error) {
 	total, err := r.queries.SumPlannedIncomesByDate(ctx, dbsqlc.SumPlannedIncomesByDateParams{
-		UserID:      uuidToPgtype(userID),
-		PlannedDate: dateToPgtype(targetDate),
+		UserID:     uuidToPgtype(userID),
+		IncomeDate: dateToPgtype(targetDate),
 	})
 	if err != nil {
 		return 0, err
@@ -53,7 +53,7 @@ func (r *summaryRepository) SumPlannedIncomesByDate(ctx context.Context, userID 
 func (r *summaryRepository) SumPlannedExpensesByDate(ctx context.Context, userID uuid.UUID, targetDate time.Time) (float64, error) {
 	total, err := r.queries.SumPlannedExpensesByDate(ctx, dbsqlc.SumPlannedExpensesByDateParams{
 		UserID:      uuidToPgtype(userID),
-		PlannedDate: dateToPgtype(targetDate),
+		ExpenseDate: dateToPgtype(targetDate),
 	})
 	if err != nil {
 		return 0, err

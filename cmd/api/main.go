@@ -2,6 +2,7 @@ package main
 
 import (
 	usecasecategory "budget-book-go/internal/application/usecase/category"
+	recurringexpense "budget-book-go/internal/application/usecase/recurring_expense"
 	"log"
 
 	usecaseexpense "budget-book-go/internal/application/usecase/expense"
@@ -28,6 +29,7 @@ func main() {
 	categoryRepo    := postgres.NewCategoryRepository(db)
 	incomeRepo := postgres.NewIncomeRepository(db)
 	summaryRepo := postgres.NewSummaryRepository(db)
+	recurringRepo := postgres.NewRecurringExpenseRepository(db)
 
 	// UseCase
 	createExpenseUC := usecaseexpense.NewCreateExpenseUseCase(expenseRepo)
@@ -43,6 +45,12 @@ func main() {
 	updateIncomeUC := usecaseincome.NewUpdateIncomeUseCase(incomeRepo)
 	deleteIncomeUC := usecaseincome.NewDeleteIncomeUseCase(incomeRepo)
 	getForecastUC := usecasesummary.NewGetForecastUseCase(summaryRepo)
+	getRecurringUC    := recurringexpense.NewGetRecurringExpenseUseCase(recurringRepo)
+	createRecurringUC := recurringexpense.NewCreateRecurringExpenseUseCase(recurringRepo)
+	updateRecurringUC := recurringexpense.NewUpdateRecurringExpenseUseCase(recurringRepo)
+	deleteRecurringUC := recurringexpense.NewDeleteRecurringExpenseUseCase(recurringRepo)
+	applyRecurringUC  := recurringexpense.NewApplyRecurringExpenseUseCase(recurringRepo, expenseRepo)
+
 
 
 	// Handler
@@ -51,6 +59,7 @@ func main() {
 		getExpenseUC,
 		updateExpenseUC,
 		deleteExpenseUC,
+		applyRecurringUC,
 		)
 	categoryHandler := handler.NewCategoryHandler(
 		getCategoryUC,
@@ -65,6 +74,13 @@ func main() {
 		deleteIncomeUC,
 	)
 	summaryHandler := handler.NewSummaryHandler(getForecastUC)
+	recurringHandler := handler.NewRecurringExpenseHandler(
+		getRecurringUC,
+		createRecurringUC,
+		updateRecurringUC,
+		deleteRecurringUC,
+		applyRecurringUC,
+	)
 
 	// Router
 	r := gin.Default()
@@ -101,6 +117,14 @@ func main() {
 		summary := api.Group("/summary")
 		{
 			summary.GET("/forecast", summaryHandler.GetForecast)
+		}
+		recurring := api.Group("/recurring-expenses")
+		{
+			recurring.GET("",      recurringHandler.GetAll)
+			recurring.GET("/:id",  recurringHandler.GetByID)
+			recurring.POST("",     recurringHandler.Create)
+			recurring.PUT("/:id",  recurringHandler.Update)
+			recurring.DELETE("/:id", recurringHandler.Delete)
 		}
 	}
 

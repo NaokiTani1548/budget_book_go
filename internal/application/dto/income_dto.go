@@ -13,8 +13,6 @@ type CreateIncomeCommand struct {
 	Description *string
 	IncomeDate  time.Time
 	Memo        *string
-	IsPlanned   bool
-	PlannedDate *time.Time
 }
 
 type UpdateIncomeCommand struct {
@@ -25,8 +23,6 @@ type UpdateIncomeCommand struct {
 	Description *string
 	IncomeDate  time.Time
 	Memo        *string
-	IsPlanned   bool
-	PlannedDate *time.Time
 }
 
 type IncomeResult struct {
@@ -38,8 +34,6 @@ type IncomeResult struct {
 	Description *string
 	IncomeDate  time.Time
 	Memo        *string
-	IsPlanned   bool
-	PlannedDate *time.Time
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }

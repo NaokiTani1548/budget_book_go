@@ -1,12 +1,11 @@
 package handler
 
 import (
-	recurringexpense "budget-book-go/internal/application/usecase/recurring_expense"
 	"net/http"
 	"time"
 
 	"budget-book-go/internal/application/dto"
-	usecaseexpense "budget-book-go/internal/application/usecase/expense"
+	recurringexpense "budget-book-go/internal/application/usecase/recurring_expense"
 	domainerror "budget-book-go/internal/domain/error"
 	"budget-book-go/internal/presentation/request"
 	"budget-book-go/internal/presentation/response"
@@ -15,68 +14,52 @@ import (
 	"github.com/google/uuid"
 )
 
-type ExpenseHandler struct {
-	createUC *usecaseexpense.CreateExpenseUseCase
-	getUC    *usecaseexpense.GetExpenseUseCase
-	updateUC *usecaseexpense.UpdateExpenseUseCase
-	deleteUC *usecaseexpense.DeleteExpenseUseCase
+type RecurringExpenseHandler struct {
+	getUC    *recurringexpense.GetRecurringExpenseUseCase
+	createUC *recurringexpense.CreateRecurringExpenseUseCase
+	updateUC *recurringexpense.UpdateRecurringExpenseUseCase
+	deleteUC *recurringexpense.DeleteRecurringExpenseUseCase
 	applyUC  *recurringexpense.ApplyRecurringExpenseUseCase
 }
 
-func NewExpenseHandler(
-	createUC *usecaseexpense.CreateExpenseUseCase,
-	getUC *usecaseexpense.GetExpenseUseCase,
-	updateUC *usecaseexpense.UpdateExpenseUseCase,
-	deleteUC *usecaseexpense.DeleteExpenseUseCase,
+func NewRecurringExpenseHandler(
+	getUC *recurringexpense.GetRecurringExpenseUseCase,
+	createUC *recurringexpense.CreateRecurringExpenseUseCase,
+	updateUC *recurringexpense.UpdateRecurringExpenseUseCase,
+	deleteUC *recurringexpense.DeleteRecurringExpenseUseCase,
 	applyUC *recurringexpense.ApplyRecurringExpenseUseCase,
-) *ExpenseHandler {
-	return &ExpenseHandler{
-		createUC: createUC,
+) *RecurringExpenseHandler {
+	return &RecurringExpenseHandler{
 		getUC:    getUC,
+		createUC: createUC,
 		updateUC: updateUC,
 		deleteUC: deleteUC,
 		applyUC:  applyUC,
 	}
 }
 
-// GET /api/expenses
-func (h *ExpenseHandler) GetAll(c *gin.Context) {
+// GET /api/recurring-expenses
+func (h *RecurringExpenseHandler) GetAll(c *gin.Context) {
 	userID, err := extractUserID(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "X-User-Idヘッダーが不正です"})
 		return
 	}
 
+	// APIリクエスト時に未処理の定期支出を自動生成
 	_ = h.applyUC.Execute(c.Request.Context(), userID)
 
-	results, err := h.getUC.ExecuteGetByUserID(c.Request.Context(), userID)
+	results, err := h.getUC.ExecuteGetAll(c.Request.Context(), userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, response.NewExpenseListResponse(results))
+	c.JSON(http.StatusOK, response.NewRecurringExpenseListResponse(results))
 }
 
-// GET /api/expenses/planned
-func (h *ExpenseHandler) GetPlanned(c *gin.Context) {
-	userID, err := extractUserID(c)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "X-User-Idヘッダーが不正です"})
-		return
-	}
-
-	results, err := h.getUC.ExecuteGetPlanned(c.Request.Context(), userID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, response.NewExpenseListResponse(results))
-}
-
-// GET /api/expenses/:id
-func (h *ExpenseHandler) GetByID(c *gin.Context) {
+// GET /api/recurring-expenses/:id
+func (h *RecurringExpenseHandler) GetByID(c *gin.Context) {
 	userID, err := extractUserID(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "X-User-Idヘッダーが不正です"})
@@ -99,55 +82,32 @@ func (h *ExpenseHandler) GetByID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, response.NewExpenseResponse(result))
+	c.JSON(http.StatusOK, response.NewRecurringExpenseResponse(result))
 }
 
-// GET /api/expenses/date?from=2026-04-01&to=2026-04-30
-func (h *ExpenseHandler) GetByDateRange(c *gin.Context) {
+// POST /api/recurring-expenses
+func (h *RecurringExpenseHandler) Create(c *gin.Context) {
 	userID, err := extractUserID(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "X-User-Idヘッダーが不正です"})
 		return
 	}
 
-	from, err := time.Parse("2006-01-02", c.Query("from"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "fromの形式が不正です（例: 2026-04-01）"})
-		return
-	}
-
-	to, err := time.Parse("2006-01-02", c.Query("to"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "toの形式が不正です（例: 2026-04-30）"})
-		return
-	}
-
-	results, err := h.getUC.ExecuteGetByDateRange(c.Request.Context(), userID, from, to)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, response.NewExpenseListResponse(results))
-}
-
-// POST /api/expenses
-func (h *ExpenseHandler) Create(c *gin.Context) {
-	userID, err := extractUserID(c)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "X-User-Idヘッダーが不正です"})
-		return
-	}
-
-	var req request.CreateExpenseRequest
+	var req request.CreateRecurringExpenseRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	expenseDate, err := time.Parse("2006-01-02", req.ExpenseDate)
+	startDate, err := time.Parse("2006-01-02", req.StartDate)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "日付の形式が不正です（例: 2026-04-14）"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "startDateの形式が不正です（例: 2026-04-01）"})
+		return
+	}
+
+	endDate, err := parseOptionalDate(req.EndDate)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "endDateの形式が不正です（例: 2027-03-31）"})
 		return
 	}
 
@@ -157,14 +117,16 @@ func (h *ExpenseHandler) Create(c *gin.Context) {
 		return
 	}
 
-	cmd := dto.CreateExpenseCommand{
+	cmd := dto.CreateRecurringExpenseCommand{
 		UserID:        userID,
 		CategoryID:    categoryID,
 		Amount:        req.Amount,
 		Description:   req.Description,
-		ExpenseDate:   expenseDate,
 		PaymentMethod: req.PaymentMethod,
 		Memo:          req.Memo,
+		BillingDay:    req.BillingDay,
+		StartDate:     startDate,
+		EndDate:       endDate,
 	}
 
 	result, err := h.createUC.Execute(c.Request.Context(), cmd)
@@ -177,11 +139,11 @@ func (h *ExpenseHandler) Create(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, response.NewExpenseResponse(result))
+	c.JSON(http.StatusCreated, response.NewRecurringExpenseResponse(result))
 }
 
-// PUT /api/expenses/:id
-func (h *ExpenseHandler) Update(c *gin.Context) {
+// PUT /api/recurring-expenses/:id
+func (h *RecurringExpenseHandler) Update(c *gin.Context) {
 	userID, err := extractUserID(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "X-User-Idヘッダーが不正です"})
@@ -194,15 +156,21 @@ func (h *ExpenseHandler) Update(c *gin.Context) {
 		return
 	}
 
-	var req request.UpdateExpenseRequest
+	var req request.UpdateRecurringExpenseRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	expenseDate, err := time.Parse("2006-01-02", req.ExpenseDate)
+	startDate, err := time.Parse("2006-01-02", req.StartDate)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "日付の形式が不正です（例: 2026-04-14）"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "startDateの形式が不正です（例: 2026-04-01）"})
+		return
+	}
+
+	endDate, err := parseOptionalDate(req.EndDate)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "endDateの形式が不正です（例: 2027-03-31）"})
 		return
 	}
 
@@ -212,15 +180,18 @@ func (h *ExpenseHandler) Update(c *gin.Context) {
 		return
 	}
 
-	cmd := dto.UpdateExpenseCommand{
+	cmd := dto.UpdateRecurringExpenseCommand{
 		ID:            id,
 		UserID:        userID,
 		CategoryID:    categoryID,
 		Amount:        req.Amount,
 		Description:   req.Description,
-		ExpenseDate:   expenseDate,
 		PaymentMethod: req.PaymentMethod,
 		Memo:          req.Memo,
+		BillingDay:    req.BillingDay,
+		StartDate:     startDate,
+		EndDate:       endDate,
+		IsActive:      req.IsActive,
 	}
 
 	result, err := h.updateUC.Execute(c.Request.Context(), cmd)
@@ -237,11 +208,11 @@ func (h *ExpenseHandler) Update(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, response.NewExpenseResponse(result))
+	c.JSON(http.StatusOK, response.NewRecurringExpenseResponse(result))
 }
 
-// DELETE /api/expenses/:id
-func (h *ExpenseHandler) Delete(c *gin.Context) {
+// DELETE /api/recurring-expenses/:id
+func (h *RecurringExpenseHandler) Delete(c *gin.Context) {
 	userID, err := extractUserID(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "X-User-Idヘッダーが不正です"})
@@ -264,39 +235,4 @@ func (h *ExpenseHandler) Delete(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusNoContent, nil)
-}
-
-// -------------------- ヘルパー --------------------
-
-func extractUserID(c *gin.Context) (uuid.UUID, error) {
-	return uuid.Parse(c.GetHeader("X-User-Id"))
-}
-
-func parseOptionalUUID(s *string) (*uuid.UUID, error) {
-	if s == nil {
-		return nil, nil
-	}
-	id, err := uuid.Parse(*s)
-	if err != nil {
-		return nil, err
-	}
-	return &id, nil
-}
-
-func isDomainError(err error, code domainerror.ErrorCode) bool {
-	if de, ok := err.(*domainerror.DomainError); ok {
-		return de.Code == code
-	}
-	return false
-}
-
-func parseOptionalDate(s *string) (*time.Time, error) {
-	if s == nil {
-		return nil, nil
-	}
-	t, err := time.Parse("2006-01-02", *s)
-	if err != nil {
-		return nil, err
-	}
-	return &t, nil
 }

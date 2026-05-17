@@ -30,8 +30,6 @@ type Expense struct {
 	Memo          *string          `json:"memo"`
 	CreatedAt     pgtype.Timestamp `json:"created_at"`
 	UpdatedAt     pgtype.Timestamp `json:"updated_at"`
-	IsPlanned     bool             `json:"is_planned"`
-	PlannedDate   pgtype.Date      `json:"planned_date"`
 }
 
 type Income struct {
@@ -44,8 +42,31 @@ type Income struct {
 	Memo        *string          `json:"memo"`
 	CreatedAt   pgtype.Timestamp `json:"created_at"`
 	UpdatedAt   pgtype.Timestamp `json:"updated_at"`
-	IsPlanned   bool             `json:"is_planned"`
-	PlannedDate pgtype.Date      `json:"planned_date"`
+}
+
+type RecurringExpense struct {
+	ID            pgtype.UUID      `json:"id"`
+	UserID        pgtype.UUID      `json:"user_id"`
+	CategoryID    pgtype.UUID      `json:"category_id"`
+	Amount        pgtype.Numeric   `json:"amount"`
+	Description   *string          `json:"description"`
+	PaymentMethod *string          `json:"payment_method"`
+	Memo          *string          `json:"memo"`
+	BillingDay    int32            `json:"billing_day"`
+	StartDate     pgtype.Date      `json:"start_date"`
+	EndDate       pgtype.Date      `json:"end_date"`
+	IsActive      bool             `json:"is_active"`
+	CreatedAt     pgtype.Timestamp `json:"created_at"`
+	UpdatedAt     pgtype.Timestamp `json:"updated_at"`
+}
+
+type RecurringExpenseLog struct {
+	ID                 pgtype.UUID      `json:"id"`
+	RecurringExpenseID pgtype.UUID      `json:"recurring_expense_id"`
+	ExpenseID          pgtype.UUID      `json:"expense_id"`
+	BillingYear        int32            `json:"billing_year"`
+	BillingMonth       int32            `json:"billing_month"`
+	CreatedAt          pgtype.Timestamp `json:"created_at"`
 }
 
 type User struct {

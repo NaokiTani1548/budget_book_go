@@ -69,8 +69,6 @@ func (r *incomeRepository) Save(ctx context.Context, income *entity.Income) (*en
 		Description: income.Description,
 		IncomeDate:  dateToPgtype(income.IncomeDate),
 		Memo:        income.Memo,
-		IsPlanned:   income.IsPlanned,
-		PlannedDate: optionalDateToPgtype(income.PlannedDate),
 	})
 	if err != nil {
 		return nil, err
@@ -87,8 +85,6 @@ func (r *incomeRepository) Update(ctx context.Context, income *entity.Income) (*
 		Description: income.Description,
 		IncomeDate:  dateToPgtype(income.IncomeDate),
 		Memo:        income.Memo,
-		IsPlanned:   income.IsPlanned,
-		PlannedDate: optionalDateToPgtype(income.PlannedDate),
 	})
 	if err != nil {
 		return nil, domainerror.NewNotFoundError("income")
@@ -128,8 +124,6 @@ func getIncomeRowToEntity(row dbsqlc.GetIncomeRow) *entity.Income {
 		Description:  row.Description,
 		IncomeDate:   row.IncomeDate.Time,
 		Memo:         row.Memo,
-		IsPlanned:    row.IsPlanned,
-		PlannedDate:  optionalPgtypeToTime(row.PlannedDate),
 		CreatedAt:    row.CreatedAt.Time,
 		UpdatedAt:    row.UpdatedAt.Time,
 		CategoryName: row.CategoryName,
@@ -145,8 +139,6 @@ func listIncomeRowToEntity(row dbsqlc.ListIncomesRow) *entity.Income {
 		Description:  row.Description,
 		IncomeDate:   row.IncomeDate.Time,
 		Memo:         row.Memo,
-		IsPlanned:    row.IsPlanned,
-		PlannedDate:  optionalPgtypeToTime(row.PlannedDate),
 		CreatedAt:    row.CreatedAt.Time,
 		UpdatedAt:    row.UpdatedAt.Time,
 		CategoryName: row.CategoryName,
@@ -162,8 +154,6 @@ func listPlannedIncomeRowToEntity(row dbsqlc.ListPlannedIncomesRow) *entity.Inco
 		Description:  row.Description,
 		IncomeDate:   row.IncomeDate.Time,
 		Memo:         row.Memo,
-		IsPlanned:    row.IsPlanned,
-		PlannedDate:  optionalPgtypeToTime(row.PlannedDate),
 		CreatedAt:    row.CreatedAt.Time,
 		UpdatedAt:    row.UpdatedAt.Time,
 		CategoryName: row.CategoryName,
@@ -179,8 +169,6 @@ func savedIncomeToEntity(row dbsqlc.Income) *entity.Income {
 		Description: row.Description,
 		IncomeDate:  row.IncomeDate.Time,
 		Memo:        row.Memo,
-		IsPlanned:   row.IsPlanned,
-		PlannedDate: optionalPgtypeToTime(row.PlannedDate),
 		CreatedAt:   row.CreatedAt.Time,
 		UpdatedAt:   row.UpdatedAt.Time,
 	}
@@ -211,8 +199,6 @@ func dateRangeIncomeRowToEntity(row dbsqlc.ListIncomesByDateRangeRow) *entity.In
 		Description:  row.Description,
 		IncomeDate:   row.IncomeDate.Time,
 		Memo:         row.Memo,
-		IsPlanned:    row.IsPlanned,
-		PlannedDate:  optionalPgtypeToTime(row.PlannedDate),
 		CreatedAt:    row.CreatedAt.Time,
 		UpdatedAt:    row.UpdatedAt.Time,
 		CategoryName: row.CategoryName,

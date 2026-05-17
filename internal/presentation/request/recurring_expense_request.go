@@ -1,19 +1,24 @@
 package request
 
-type CreateExpenseRequest struct {
+type CreateRecurringExpenseRequest struct {
 	Amount        float64 `json:"amount" binding:"required,gt=0"`
-	ExpenseDate   string  `json:"expenseDate" binding:"required"`
+	BillingDay    int     `json:"billingDay" binding:"required,min=1,max=31"`
+	StartDate     string  `json:"startDate" binding:"required"`
 	CategoryID    *string `json:"categoryId"`
 	Description   *string `json:"description"`
 	PaymentMethod *string `json:"paymentMethod"`
 	Memo          *string `json:"memo"`
+	EndDate       *string `json:"endDate"`
 }
 
-type UpdateExpenseRequest struct {
+type UpdateRecurringExpenseRequest struct {
 	Amount        float64 `json:"amount" binding:"required,gt=0"`
-	ExpenseDate   string  `json:"expenseDate" binding:"required"`
+	BillingDay    int     `json:"billingDay" binding:"required,min=1,max=31"`
+	StartDate     string  `json:"startDate" binding:"required"`
 	CategoryID    *string `json:"categoryId"`
 	Description   *string `json:"description"`
 	PaymentMethod *string `json:"paymentMethod"`
 	Memo          *string `json:"memo"`
+	EndDate       *string `json:"endDate"`
+	IsActive      bool    `json:"isActive"`
 }
