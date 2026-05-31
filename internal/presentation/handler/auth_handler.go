@@ -46,12 +46,17 @@ func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 		return
 	}
 
-	redirectURL := fmt.Sprintf("http://localhost:3000/auth/callback?token=%s&userId=%s&email=%s&name=%s",
-		url.QueryEscape(result.Token),
-		url.QueryEscape(result.UserID),
-		url.QueryEscape(result.Email),
-		url.QueryEscape(result.Name),
-	)
+    frontendURL := os.Getenv("FRONTEND_URL")
+    if frontendURL == "" {
+        frontendURL = "http://localhost:3000"
+    }
+    redirectURL := fmt.Sprintf("%s/auth/callback?token=%s&userId=%s&email=%s&name=%s",
+        frontendURL,
+        url.QueryEscape(result.Token),
+        url.QueryEscape(result.UserID),
+        url.QueryEscape(result.Email),
+        url.QueryEscape(result.Name),
+    )
 	c.Redirect(http.StatusFound, redirectURL)
 }
 
