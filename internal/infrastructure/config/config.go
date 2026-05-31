@@ -8,7 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type NewDBConfig struct {
+type DBConfig struct {
     Host     string
     Port     string
     Database string
