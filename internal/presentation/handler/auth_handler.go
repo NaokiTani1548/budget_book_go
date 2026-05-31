@@ -1,6 +1,7 @@
 package handler
 
 import (
+    "os"
 	"crypto/rand"
 	"encoding/hex"
 	"net/http"
