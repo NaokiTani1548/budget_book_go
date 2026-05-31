@@ -1,6 +1,7 @@
 package main
 
 import (
+    "os"
 	usecasecategory "budget-book-go/internal/application/usecase/category"
 	recurringexpense "budget-book-go/internal/application/usecase/recurring_expense"
 	"log"
@@ -165,8 +166,8 @@ api := r.Group("/api")
 }
 
 	// サーバー起動
-　　port := config.GetPort()
-　　if err := r.Run(":" + port); err != nil {
-		log.Fatalf("サーバーの起動に失敗しました: %v", err)
+   port := config.GetPort()
+   if err := r.Run(":" + port); err != nil {
+	   log.Fatalf("サーバーの起動に失敗しました: %v", err)
 	}
 }
