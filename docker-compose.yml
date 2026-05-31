@@ -7,6 +7,8 @@ services:
       POSTGRES_USER: budget_book_user
       POSTGRES_PASSWORD: budget_book_pass
       POSTGRES_DB: budget_book_db
+      TZ: Asia/Tokyo                    # 追加
+      PGTZ: Asia/Tokyo                  # 追加
     ports:
       - "5432:5432"
     volumes:

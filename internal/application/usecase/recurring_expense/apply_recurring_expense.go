@@ -27,7 +27,17 @@ func NewApplyRecurringExpenseUseCase(
 
 func (uc *ApplyRecurringExpenseUseCase) Execute(ctx context.Context, userID uuid.UUID) error {
 	now := time.Now()
+	// 今月 + 1ヶ月先まで生成
+	return uc.applyUpTo(ctx, userID, firstDayOf(now.AddDate(0, 1, 0)))
+}
 
+// ExecuteForRange は from〜to の期間に含まれる月の定期支出を適用する。
+// 期間指定取得など未来日付を含むクエリ実行前に呼び出す。
+func (uc *ApplyRecurringExpenseUseCase) ExecuteForRange(ctx context.Context, userID uuid.UUID, from, to time.Time) error {
+	return uc.applyUpTo(ctx, userID, firstDayOf(to))
+}
+
+func (uc *ApplyRecurringExpenseUseCase) applyUpTo(ctx context.Context, userID uuid.UUID, upTo time.Time) error {
 	list, err := uc.recurringRepo.FindActive(ctx, userID)
 	if err != nil {
 		return err
@@ -35,8 +45,15 @@ func (uc *ApplyRecurringExpenseUseCase) Execute(ctx context.Context, userID uuid
 
 	for _, re := range list {
 		current := firstDayOf(re.StartDate)
-		// 今月 + 1ヶ月先まで生成
-		target := firstDayOf(now.AddDate(0, 1, 0))
+
+		// EndDate がある場合は upTo と小さい方を上限にする
+		target := upTo
+		if re.EndDate != nil {
+			endMonth := firstDayOf(*re.EndDate)
+			if endMonth.Before(target) {
+				target = endMonth
+			}
+		}
 
 		for !current.After(target) {
 			year  := current.Year()

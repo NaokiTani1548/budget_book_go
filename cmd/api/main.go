@@ -8,14 +8,24 @@ import (
 	usecaseexpense "budget-book-go/internal/application/usecase/expense"
 	usecaseincome "budget-book-go/internal/application/usecase/income"
 	usecasesummary "budget-book-go/internal/application/usecase/summary"
+	usecaseauth "budget-book-go/internal/application/usecase/auth"
 	"budget-book-go/internal/infrastructure/config"
 	"budget-book-go/internal/infrastructure/persistence/postgres"
 	"budget-book-go/internal/presentation/handler"
+	"budget-book-go/internal/presentation/middleware"
 
 	"github.com/gin-gonic/gin"
+
+	"github.com/joho/godotenv"
+	"github.com/gin-contrib/cors"
 )
 
 func main() {
+	if err := godotenv.Load(); err != nil {
+		log.Println(".envファイルが見つかりません。環境変数を使用します")
+	}
+    oauthConfig := config.NewGoogleOAuthConfig()
+    jwtSecret := config.GetJWTSecret()
 	// DB接続
 	dbConfig := config.NewDBConfig()
 	db, err := config.NewDBPool(dbConfig)
@@ -30,6 +40,7 @@ func main() {
 	incomeRepo := postgres.NewIncomeRepository(db)
 	summaryRepo := postgres.NewSummaryRepository(db)
 	recurringRepo := postgres.NewRecurringExpenseRepository(db)
+	userRepo := postgres.NewUserRepository(db)
 
 	// UseCase
 	createExpenseUC := usecaseexpense.NewCreateExpenseUseCase(expenseRepo)
@@ -50,6 +61,7 @@ func main() {
 	updateRecurringUC := recurringexpense.NewUpdateRecurringExpenseUseCase(recurringRepo)
 	deleteRecurringUC := recurringexpense.NewDeleteRecurringExpenseUseCase(recurringRepo)
 	applyRecurringUC  := recurringexpense.NewApplyRecurringExpenseUseCase(recurringRepo, expenseRepo)
+	googleAuthUC := usecaseauth.NewGoogleAuthUseCase(userRepo, oauthConfig, jwtSecret)
 
 
 
@@ -81,55 +93,80 @@ func main() {
 		deleteRecurringUC,
 		applyRecurringUC,
 	)
+    authHandler := handler.NewAuthHandler(googleAuthUC)
 
 	// Router
 	r := gin.Default()
 
-	api := r.Group("/api")
+	r.Use(cors.New(cors.Config{
+        AllowOrigins:     []string{"http://localhost:5173", "http://localhost:3000", os.Getenv("FRONTEND_URL")},
+        AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+        AllowHeaders:     []string{"Authorization", "Content-Type"},
+        AllowCredentials: true,
+    }))
+
+api := r.Group("/api")
+{
+	// 認証不要
+	auth := api.Group("/auth")
 	{
-		expenses := api.Group("/expenses")
+		auth.GET("/google/url", authHandler.GetGoogleAuthURL)
+		auth.GET("/google/callback", authHandler.GoogleCallback)
+	}
+
+	// 認証必要（JWTミドルウェア適用）
+	protected := api.Group("")
+	protected.Use(middleware.AuthMiddleware(jwtSecret))
+	{
+		expenses := protected.Group("/expenses")
 		{
-			expenses.GET("",      expenseHandler.GetAll)
-			expenses.GET("/planned",  expenseHandler.GetPlanned)
+			expenses.GET("", expenseHandler.GetAllByUserID)
+			expenses.GET("/planned", expenseHandler.GetPlanned)
 			expenses.GET("/date", expenseHandler.GetByDateRange)
-			expenses.GET("/:id",  expenseHandler.GetByID)
-			expenses.POST("",     expenseHandler.Create)
-			expenses.PUT("/:id",  expenseHandler.Update)
+			expenses.GET("/:id", expenseHandler.GetByID)
+			expenses.POST("", expenseHandler.Create)
+			expenses.PUT("/:id", expenseHandler.Update)
 			expenses.DELETE("/:id", expenseHandler.Delete)
 		}
-		incomes := api.Group("/incomes")
+
+		incomes := protected.Group("/incomes")
 		{
-			incomes.GET("",          incomeHandler.GetAll)
-			incomes.GET("/planned",  incomeHandler.GetPlanned)
+			incomes.GET("", incomeHandler.GetAllByUserID)
+			incomes.GET("/planned", incomeHandler.GetPlanned)
 			incomes.GET("/date", incomeHandler.GetByDateRange)
-			incomes.GET("/:id",      incomeHandler.GetByID)
-			incomes.POST("",         incomeHandler.Create)
-			incomes.PUT("/:id",      incomeHandler.Update)
-			incomes.DELETE("/:id",   incomeHandler.Delete)
+			incomes.GET("/:id", incomeHandler.GetByID)
+			incomes.POST("", incomeHandler.Create)
+			incomes.PUT("/:id", incomeHandler.Update)
+			incomes.DELETE("/:id", incomeHandler.Delete)
 		}
-		categories := api.Group("/categories")
+
+		categories := protected.Group("/categories")
 		{
-			categories.GET("",       categoryHandler.GetAllByUserID)
-			categories.POST("",      categoryHandler.Create)
-			categories.PUT("/:id",   categoryHandler.Update)
+			categories.GET("", categoryHandler.GetAllByUserID)
+			categories.POST("", categoryHandler.Create)
+			categories.PUT("/:id", categoryHandler.Update)
 			categories.DELETE("/:id", categoryHandler.Delete)
 		}
-		summary := api.Group("/summary")
+
+		recurring := protected.Group("/recurring-expenses")
+		{
+			recurring.GET("", recurringHandler.GetAll)
+			recurring.GET("/:id", recurringHandler.GetByID)
+			recurring.POST("", recurringHandler.Create)
+			recurring.PUT("/:id", recurringHandler.Update)
+			recurring.DELETE("/:id", recurringHandler.Delete)
+		}
+
+		summary := protected.Group("/summary")
 		{
 			summary.GET("/forecast", summaryHandler.GetForecast)
 		}
-		recurring := api.Group("/recurring-expenses")
-		{
-			recurring.GET("",      recurringHandler.GetAll)
-			recurring.GET("/:id",  recurringHandler.GetByID)
-			recurring.POST("",     recurringHandler.Create)
-			recurring.PUT("/:id",  recurringHandler.Update)
-			recurring.DELETE("/:id", recurringHandler.Delete)
-		}
 	}
+}
 
 	// サーバー起動
-	if err := r.Run(":8080"); err != nil {
+　　port := config.GetPort()
+　　if err := r.Run(":" + port); err != nil {
 		log.Fatalf("サーバーの起動に失敗しました: %v", err)
 	}
 }

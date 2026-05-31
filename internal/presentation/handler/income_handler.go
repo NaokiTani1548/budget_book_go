@@ -35,7 +35,7 @@ func NewIncomeHandler(
 }
 
 // GET /api/incomes
-func (h *IncomeHandler) GetAll(c *gin.Context) {
+func (h *IncomeHandler) GetAllByUserID(c *gin.Context) {
 	userID, err := extractUserID(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "X-User-Idヘッダーが不正です"})

@@ -4,6 +4,7 @@ import (
 	recurringexpense "budget-book-go/internal/application/usecase/recurring_expense"
 	"net/http"
 	"time"
+	"fmt"
 
 	"budget-book-go/internal/application/dto"
 	usecaseexpense "budget-book-go/internal/application/usecase/expense"
@@ -40,7 +41,7 @@ func NewExpenseHandler(
 }
 
 // GET /api/expenses
-func (h *ExpenseHandler) GetAll(c *gin.Context) {
+func (h *ExpenseHandler) GetAllByUserID(c *gin.Context) {
 	userID, err := extractUserID(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "X-User-Idヘッダーが不正です"})
@@ -121,6 +122,8 @@ func (h *ExpenseHandler) GetByDateRange(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "toの形式が不正です（例: 2026-04-30）"})
 		return
 	}
+
+	_ = h.applyUC.ExecuteForRange(c.Request.Context(), userID, from, to)
 
 	results, err := h.getUC.ExecuteGetByDateRange(c.Request.Context(), userID, from, to)
 	if err != nil {
@@ -269,7 +272,15 @@ func (h *ExpenseHandler) Delete(c *gin.Context) {
 // -------------------- ヘルパー --------------------
 
 func extractUserID(c *gin.Context) (uuid.UUID, error) {
-	return uuid.Parse(c.GetHeader("X-User-Id"))
+	userID, exists := c.Get("userID")
+	if !exists {
+		return uuid.Nil, fmt.Errorf("userID not found in context")
+	}
+	id, ok := userID.(uuid.UUID)
+	if !ok {
+		return uuid.Nil, fmt.Errorf("userID is not uuid.UUID")
+	}
+	return id, nil
 }
 
 func parseOptionalUUID(s *string) (*uuid.UUID, error) {
