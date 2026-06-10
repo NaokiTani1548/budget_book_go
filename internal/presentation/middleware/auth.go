@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -11,6 +12,28 @@ import (
 
 func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		if os.Getenv("IS_MOCK") == "True" {
+			// X-User-Id があればそれを使う
+			userIDStr := c.GetHeader("X-User-Id")
+			if userIDStr != "" {
+				userID, err := uuid.Parse(userIDStr)
+				if err == nil {
+					c.Set("userID", userID)
+					c.Next()
+					return
+				}
+			}
+			// X-User-Id がなければデフォルトユーザーを使う
+			defaultID := os.Getenv("MOCK_USER_ID")
+			if defaultID != "" {
+				userID, err := uuid.Parse(defaultID)
+				if err == nil {
+					c.Set("userID", userID)
+					c.Next()
+					return
+				}
+			}
+		}
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "認証トークンが必要です"})

@@ -10,6 +10,7 @@ import (
 	usecaseincome "budget-book-go/internal/application/usecase/income"
 	usecasesummary "budget-book-go/internal/application/usecase/summary"
 	usecaseauth "budget-book-go/internal/application/usecase/auth"
+	usecaseocr "budget-book-go/internal/application/usecase/ocr"
 	"budget-book-go/internal/infrastructure/config"
 	"budget-book-go/internal/infrastructure/persistence/postgres"
 	"budget-book-go/internal/presentation/handler"
@@ -63,6 +64,8 @@ func main() {
 	deleteRecurringUC := recurringexpense.NewDeleteRecurringExpenseUseCase(recurringRepo)
 	applyRecurringUC  := recurringexpense.NewApplyRecurringExpenseUseCase(recurringRepo, expenseRepo)
 	googleAuthUC := usecaseauth.NewGoogleAuthUseCase(userRepo, oauthConfig, jwtSecret)
+	geminiKey := config.GetGeminiAPIKey()
+    analyzeReceiptUC := usecaseocr.NewAnalyzeReceiptUseCase(geminiKey)
 
 
 
@@ -95,6 +98,7 @@ func main() {
 		applyRecurringUC,
 	)
     authHandler := handler.NewAuthHandler(googleAuthUC)
+    ocrHandler := handler.NewOCRHandler(analyzeReceiptUC)
 
 	// Router
 	r := gin.Default()
@@ -162,6 +166,10 @@ api := r.Group("/api")
 		{
 			summary.GET("/forecast", summaryHandler.GetForecast)
 		}
+        ocrGroup := protected.Group("/ocr")
+        {
+            ocrGroup.POST("/analyze", ocrHandler.Analyze)
+        }
 	}
 }
 
