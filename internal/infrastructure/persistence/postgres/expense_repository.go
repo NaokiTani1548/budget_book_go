@@ -243,3 +243,38 @@ func listPlannedExpensesRowToEntity(row dbsqlc.ListPlannedExpensesRow) *entity.E
 		CategoryName: row.CategoryName,
 	}
 }
+
+func (r *expenseRepository) Search(ctx context.Context, userID uuid.UUID, params repository.SearchExpenseParams) ([]*entity.Expense, error) {
+	rows, err := r.queries.SearchExpenses(ctx, dbsqlc.SearchExpensesParams{
+		UserID:     uuidToPgtype(userID),
+		DateFrom:   optionalDateToPgtype(params.DateFrom),
+		DateTo:     optionalDateToPgtype(params.DateTo),
+		CategoryID: optionalUuidToPgtype(params.CategoryID),
+		Keyword:    params.Keyword,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	expenses := make([]*entity.Expense, len(rows))
+	for i, row := range rows {
+		expenses[i] = searchRowToExpense(row)
+	}
+	return expenses, nil
+}
+
+func searchRowToExpense(row dbsqlc.SearchExpensesRow) *entity.Expense {
+	return &entity.Expense{
+		ID:            pgtypeToUUID(row.ID),
+		UserID:        pgtypeToUUID(row.UserID),
+		CategoryID:    optionalPgtypeToUUID(row.CategoryID),
+		Amount:        numericToFloat(row.Amount),
+		Description:   row.Description,
+		ExpenseDate:   row.ExpenseDate.Time,
+		PaymentMethod: row.PaymentMethod,
+		Memo:          row.Memo,
+		CreatedAt:     row.CreatedAt.Time,
+		UpdatedAt:     row.UpdatedAt.Time,
+		CategoryName:  row.CategoryName,
+	}
+}

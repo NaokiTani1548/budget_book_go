@@ -9,6 +9,7 @@ import (
 	"budget-book-go/internal/application/dto"
 	usecaseexpense "budget-book-go/internal/application/usecase/expense"
 	domainerror "budget-book-go/internal/domain/error"
+	repository "budget-book-go/internal/domain/repository"
 	"budget-book-go/internal/presentation/request"
 	"budget-book-go/internal/presentation/response"
 
@@ -310,4 +311,54 @@ func parseOptionalDate(s *string) (*time.Time, error) {
 		return nil, err
 	}
 	return &t, nil
+}
+
+// GET /api/expenses/search?from=&to=&categoryId=&keyword=
+func (h *ExpenseHandler) Search(c *gin.Context) {
+	userID, err := extractUserID(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "認証エラー"})
+		return
+	}
+
+	var params repository.SearchExpenseParams
+
+	if from := c.Query("from"); from != "" {
+		t, err := time.Parse("2006-01-02", from)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "fromの形式が不正です（例: 2026-05-01）"})
+			return
+		}
+		params.DateFrom = &t
+	}
+
+	if to := c.Query("to"); to != "" {
+		t, err := time.Parse("2006-01-02", to)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "toの形式が不正です（例: 2026-05-31）"})
+			return
+		}
+		params.DateTo = &t
+	}
+
+	if categoryID := c.Query("categoryId"); categoryID != "" {
+		id, err := uuid.Parse(categoryID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "categoryIdの形式が不正です"})
+			return
+		}
+		params.CategoryID = &id
+	}
+
+	if keyword := c.Query("keyword"); keyword != "" {
+		params.Keyword = &keyword
+	}
+
+	results, err := h.getUC.ExecuteSearch(c.Request.Context(), userID, params)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, response.NewExpenseListResponse(results))
 }

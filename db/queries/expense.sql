@@ -71,6 +71,28 @@ WHERE e.user_id = $1
   AND e.expense_date > CURRENT_DATE
 ORDER BY e.expense_date ASC;
 
+-- name: SearchExpenses :many
+SELECT
+    e.id,
+    e.user_id,
+    e.category_id,
+    e.amount,
+    e.description,
+    e.expense_date,
+    e.payment_method,
+    e.memo,
+    e.created_at,
+    e.updated_at,
+    c.name AS category_name
+FROM expenses e
+         LEFT JOIN categories c ON e.category_id = c.id
+WHERE e.user_id = $1
+  AND (sqlc.narg('date_from')::date IS NULL OR e.expense_date >= sqlc.narg('date_from'))
+  AND (sqlc.narg('date_to')::date IS NULL OR e.expense_date <= sqlc.narg('date_to'))
+  AND (sqlc.narg('category_id')::uuid IS NULL OR e.category_id = sqlc.narg('category_id'))
+  AND (sqlc.narg('keyword')::text IS NULL OR e.description ILIKE '%' || sqlc.narg('keyword') || '%')
+ORDER BY e.expense_date DESC;
+
 -- name: CreateExpense :one
 INSERT INTO expenses (
     user_id,

@@ -336,6 +336,89 @@ func (q *Queries) ListPlannedExpenses(ctx context.Context, userID pgtype.UUID) (
 	return items, nil
 }
 
+const searchExpenses = `-- name: SearchExpenses :many
+SELECT
+    e.id,
+    e.user_id,
+    e.category_id,
+    e.amount,
+    e.description,
+    e.expense_date,
+    e.payment_method,
+    e.memo,
+    e.created_at,
+    e.updated_at,
+    c.name AS category_name
+FROM expenses e
+         LEFT JOIN categories c ON e.category_id = c.id
+WHERE e.user_id = $1
+  AND ($2::date IS NULL OR e.expense_date >= $2)
+  AND ($3::date IS NULL OR e.expense_date <= $3)
+  AND ($4::uuid IS NULL OR e.category_id = $4)
+  AND ($5::text IS NULL OR e.description ILIKE '%' || $5 || '%')
+ORDER BY e.expense_date DESC
+`
+
+type SearchExpensesParams struct {
+	UserID     pgtype.UUID `json:"user_id"`
+	DateFrom   pgtype.Date `json:"date_from"`
+	DateTo     pgtype.Date `json:"date_to"`
+	CategoryID pgtype.UUID `json:"category_id"`
+	Keyword    *string     `json:"keyword"`
+}
+
+type SearchExpensesRow struct {
+	ID            pgtype.UUID      `json:"id"`
+	UserID        pgtype.UUID      `json:"user_id"`
+	CategoryID    pgtype.UUID      `json:"category_id"`
+	Amount        pgtype.Numeric   `json:"amount"`
+	Description   *string          `json:"description"`
+	ExpenseDate   pgtype.Date      `json:"expense_date"`
+	PaymentMethod *string          `json:"payment_method"`
+	Memo          *string          `json:"memo"`
+	CreatedAt     pgtype.Timestamp `json:"created_at"`
+	UpdatedAt     pgtype.Timestamp `json:"updated_at"`
+	CategoryName  *string          `json:"category_name"`
+}
+
+func (q *Queries) SearchExpenses(ctx context.Context, arg SearchExpensesParams) ([]SearchExpensesRow, error) {
+	rows, err := q.db.Query(ctx, searchExpenses,
+		arg.UserID,
+		arg.DateFrom,
+		arg.DateTo,
+		arg.CategoryID,
+		arg.Keyword,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SearchExpensesRow
+	for rows.Next() {
+		var i SearchExpensesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.CategoryID,
+			&i.Amount,
+			&i.Description,
+			&i.ExpenseDate,
+			&i.PaymentMethod,
+			&i.Memo,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.CategoryName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateExpense = `-- name: UpdateExpense :one
 UPDATE expenses SET
                     category_id    = $1,

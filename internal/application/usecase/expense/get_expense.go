@@ -63,3 +63,16 @@ func (uc *GetExpenseUseCase) ExecuteGetPlanned(ctx context.Context, userID uuid.
 	}
 	return results, nil
 }
+
+func (uc *GetExpenseUseCase) ExecuteSearch(ctx context.Context, userID uuid.UUID, params repository.SearchExpenseParams) ([]*dto.ExpenseResult, error) {
+	expenses, err := uc.expenseRepo.Search(ctx, userID, params)
+	if err != nil {
+		return nil, err
+	}
+
+	results := make([]*dto.ExpenseResult, len(expenses))
+	for i, e := range expenses {
+		results[i] = toExpenseResult(e)
+	}
+	return results, nil
+}
