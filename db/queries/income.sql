@@ -29,7 +29,12 @@ SELECT
 FROM incomes i
          LEFT JOIN categories c ON i.category_id = c.id
 WHERE i.user_id = $1 AND i.income_date <= CURRENT_DATE
-ORDER BY i.income_date DESC;
+ORDER BY i.income_date DESC
+LIMIT $2 OFFSET $3;
+
+-- name: CountIncomes :one
+SELECT COUNT(*) FROM incomes
+WHERE user_id = $1 AND income_date <= CURRENT_DATE;
 
 -- name: ListPlannedIncomes :many
 SELECT

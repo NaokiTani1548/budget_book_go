@@ -37,8 +37,12 @@ func (r *incomeRepository) FindByID(ctx context.Context, id uuid.UUID, userID uu
 	return getIncomeRowToEntity(row), nil
 }
 
-func (r *incomeRepository) FindByUserID(ctx context.Context, userID uuid.UUID) ([]*entity.Income, error) {
-	rows, err := r.queries.ListIncomes(ctx, uuidToPgtype(userID))
+func (r *incomeRepository) FindByUserID(ctx context.Context, userID uuid.UUID, limit int32, offset int32) ([]*entity.Income, error) {
+	rows, err := r.queries.ListIncomes(ctx, dbsqlc.ListIncomesParams{
+		UserID: uuidToPgtype(userID),
+		Limit:  limit,
+		Offset: offset,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -47,6 +51,10 @@ func (r *incomeRepository) FindByUserID(ctx context.Context, userID uuid.UUID) (
 		incomes[i] = listIncomeRowToEntity(row)
 	}
 	return incomes, nil
+}
+
+func (r *incomeRepository) CountByUserID(ctx context.Context, userID uuid.UUID) (int64, error) {
+	return r.queries.CountIncomes(ctx, uuidToPgtype(userID))
 }
 
 func (r *incomeRepository) FindPlanned(ctx context.Context, userID uuid.UUID) ([]*entity.Income, error) {

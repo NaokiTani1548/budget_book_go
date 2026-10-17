@@ -18,17 +18,22 @@ func NewGetExpenseUseCase(expenseRepo repository.ExpenseRepository) *GetExpenseU
 	return &GetExpenseUseCase{expenseRepo: expenseRepo}
 }
 
-func (uc *GetExpenseUseCase) ExecuteGetByUserID(ctx context.Context, userID uuid.UUID) ([]*dto.ExpenseResult, error) {
-	expenses, err := uc.expenseRepo.FindByUserID(ctx, userID)
+func (uc *GetExpenseUseCase) ExecuteGetByUserID(ctx context.Context, userID uuid.UUID, limit int32, offset int32) ([]*dto.ExpenseResult, int64, error) {
+	totalCount, err := uc.expenseRepo.CountByUserID(ctx, userID)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
+	}
+
+	expenses, err := uc.expenseRepo.FindByUserID(ctx, userID, limit, offset)
+	if err != nil {
+		return nil, 0, err
 	}
 
 	results := make([]*dto.ExpenseResult, len(expenses))
 	for i, e := range expenses {
 		results[i] = toExpenseResult(e)
 	}
-	return results, nil
+	return results, totalCount, nil
 }
 
 func (uc *GetExpenseUseCase) ExecuteGetOne(ctx context.Context, id uuid.UUID, userID uuid.UUID) (*dto.ExpenseResult, error) {

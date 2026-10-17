@@ -36,6 +36,26 @@ func NewExpenseResponse(result *dto.ExpenseResult) ExpenseResponse {
 	}
 }
 
+type PaginatedExpenseResponse struct {
+	Items      []ExpenseResponse `json:"items"`
+	TotalCount int64             `json:"totalCount"`
+	Limit      int32             `json:"limit"`
+	Offset     int32             `json:"offset"`
+}
+
+func NewPaginatedExpenseResponse(results []*dto.ExpenseResult, totalCount int64, limit int32, offset int32) PaginatedExpenseResponse {
+	items := make([]ExpenseResponse, len(results))
+	for i, result := range results {
+		items[i] = NewExpenseResponse(result)
+	}
+	return PaginatedExpenseResponse{
+		Items:      items,
+		TotalCount: totalCount,
+		Limit:      limit,
+		Offset:     offset,
+	}
+}
+
 func NewExpenseListResponse(results []*dto.ExpenseResult) []ExpenseResponse {
 	responses := make([]ExpenseResponse, len(results))
 	for i, result := range results {

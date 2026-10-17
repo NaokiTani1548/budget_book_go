@@ -3,6 +3,7 @@ package handler
 import (
 	recurringexpense "budget-book-go/internal/application/usecase/recurring_expense"
 	"net/http"
+	"strconv"
 	"time"
 	"fmt"
 
@@ -41,7 +42,7 @@ func NewExpenseHandler(
 	}
 }
 
-// GET /api/expenses
+// GET /api/expenses?limit=20&offset=0
 func (h *ExpenseHandler) GetAllByUserID(c *gin.Context) {
 	userID, err := extractUserID(c)
 	if err != nil {
@@ -49,15 +50,21 @@ func (h *ExpenseHandler) GetAllByUserID(c *gin.Context) {
 		return
 	}
 
+	limit, offset, err := parsePagination(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	_ = h.applyUC.Execute(c.Request.Context(), userID)
 
-	results, err := h.getUC.ExecuteGetByUserID(c.Request.Context(), userID)
+	results, totalCount, err := h.getUC.ExecuteGetByUserID(c.Request.Context(), userID, limit, offset)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, response.NewExpenseListResponse(results))
+	c.JSON(http.StatusOK, response.NewPaginatedExpenseResponse(results, totalCount, limit, offset))
 }
 
 // GET /api/expenses/planned
@@ -300,6 +307,29 @@ func isDomainError(err error, code domainerror.ErrorCode) bool {
 		return de.Code == code
 	}
 	return false
+}
+
+func parsePagination(c *gin.Context) (int32, int32, error) {
+	var limit int32 = 20
+	var offset int32 = 0
+
+	if l := c.Query("limit"); l != "" {
+		parsed, err := strconv.ParseInt(l, 10, 32)
+		if err != nil || parsed < 1 {
+			return 0, 0, fmt.Errorf("limitは1以上の整数を指定してください")
+		}
+		limit = int32(parsed)
+	}
+
+	if o := c.Query("offset"); o != "" {
+		parsed, err := strconv.ParseInt(o, 10, 32)
+		if err != nil || parsed < 0 {
+			return 0, 0, fmt.Errorf("offsetは0以上の整数を指定してください")
+		}
+		offset = int32(parsed)
+	}
+
+	return limit, offset, nil
 }
 
 func parseOptionalDate(s *string) (*time.Time, error) {

@@ -11,6 +11,18 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countExpenses = `-- name: CountExpenses :one
+SELECT COUNT(*) FROM expenses
+WHERE user_id = $1 AND expense_date <= CURRENT_DATE
+`
+
+func (q *Queries) CountExpenses(ctx context.Context, userID pgtype.UUID) (int64, error) {
+	row := q.db.QueryRow(ctx, countExpenses, userID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createExpense = `-- name: CreateExpense :one
 INSERT INTO expenses (
     user_id,
@@ -150,7 +162,14 @@ FROM expenses e
 LEFT JOIN categories c ON e.category_id = c.id
 WHERE e.user_id = $1 AND e.expense_date <= CURRENT_DATE
 ORDER BY e.expense_date DESC
+LIMIT $2 OFFSET $3
 `
+
+type ListExpensesParams struct {
+	UserID pgtype.UUID `json:"user_id"`
+	Limit  int32       `json:"limit"`
+	Offset int32       `json:"offset"`
+}
 
 type ListExpensesRow struct {
 	ID            pgtype.UUID      `json:"id"`
@@ -166,8 +185,8 @@ type ListExpensesRow struct {
 	CategoryName  *string          `json:"category_name"`
 }
 
-func (q *Queries) ListExpenses(ctx context.Context, userID pgtype.UUID) ([]ListExpensesRow, error) {
-	rows, err := q.db.Query(ctx, listExpenses, userID)
+func (q *Queries) ListExpenses(ctx context.Context, arg ListExpensesParams) ([]ListExpensesRow, error) {
+	rows, err := q.db.Query(ctx, listExpenses, arg.UserID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}

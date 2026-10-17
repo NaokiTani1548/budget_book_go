@@ -18,16 +18,21 @@ func NewGetIncomeUseCase(incomeRepo repository.IncomeRepository) *GetIncomeUseCa
 	return &GetIncomeUseCase{incomeRepo: incomeRepo}
 }
 
-func (uc *GetIncomeUseCase) ExecuteGetByUserID(ctx context.Context, userID uuid.UUID) ([]*dto.IncomeResult, error) {
-	incomes, err := uc.incomeRepo.FindByUserID(ctx, userID)
+func (uc *GetIncomeUseCase) ExecuteGetByUserID(ctx context.Context, userID uuid.UUID, limit int32, offset int32) ([]*dto.IncomeResult, int64, error) {
+	totalCount, err := uc.incomeRepo.CountByUserID(ctx, userID)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
+	}
+
+	incomes, err := uc.incomeRepo.FindByUserID(ctx, userID, limit, offset)
+	if err != nil {
+		return nil, 0, err
 	}
 	results := make([]*dto.IncomeResult, len(incomes))
 	for i, inc := range incomes {
 		results[i] = toIncomeResult(inc)
 	}
-	return results, nil
+	return results, totalCount, nil
 }
 
 func (uc *GetIncomeUseCase) ExecuteGetByDateRange(ctx context.Context, userID uuid.UUID, from time.Time, to time.Time) ([]*dto.IncomeResult, error) {

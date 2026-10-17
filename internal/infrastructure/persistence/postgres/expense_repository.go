@@ -40,8 +40,12 @@ func (r *expenseRepository) FindByID(ctx context.Context, id uuid.UUID, userID u
 	return rowToExpense(row), nil
 }
 
-func (r *expenseRepository) FindByUserID(ctx context.Context, userID uuid.UUID) ([]*entity.Expense, error) {
-	rows, err := r.queries.ListExpenses(ctx, uuidToPgtype(userID))
+func (r *expenseRepository) FindByUserID(ctx context.Context, userID uuid.UUID, limit int32, offset int32) ([]*entity.Expense, error) {
+	rows, err := r.queries.ListExpenses(ctx, dbsqlc.ListExpensesParams{
+		UserID: uuidToPgtype(userID),
+		Limit:  limit,
+		Offset: offset,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -51,6 +55,10 @@ func (r *expenseRepository) FindByUserID(ctx context.Context, userID uuid.UUID) 
 		expenses[i] = listRowToExpense(row)
 	}
 	return expenses, nil
+}
+
+func (r *expenseRepository) CountByUserID(ctx context.Context, userID uuid.UUID) (int64, error) {
+	return r.queries.CountExpenses(ctx, uuidToPgtype(userID))
 }
 
 func (r *expenseRepository) FindByDateRange(ctx context.Context, userID uuid.UUID, from time.Time, to time.Time) ([]*entity.Expense, error) {

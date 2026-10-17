@@ -31,7 +31,12 @@ SELECT
 FROM expenses e
 LEFT JOIN categories c ON e.category_id = c.id
 WHERE e.user_id = $1 AND e.expense_date <= CURRENT_DATE
-ORDER BY e.expense_date DESC;
+ORDER BY e.expense_date DESC
+LIMIT $2 OFFSET $3;
+
+-- name: CountExpenses :one
+SELECT COUNT(*) FROM expenses
+WHERE user_id = $1 AND expense_date <= CURRENT_DATE;
 
 -- name: ListExpensesByDateRange :many
 SELECT

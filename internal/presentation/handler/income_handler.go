@@ -34,7 +34,7 @@ func NewIncomeHandler(
 	}
 }
 
-// GET /api/incomes
+// GET /api/incomes?limit=20&offset=0
 func (h *IncomeHandler) GetAllByUserID(c *gin.Context) {
 	userID, err := extractUserID(c)
 	if err != nil {
@@ -42,13 +42,19 @@ func (h *IncomeHandler) GetAllByUserID(c *gin.Context) {
 		return
 	}
 
-	results, err := h.getUC.ExecuteGetByUserID(c.Request.Context(), userID)
+	limit, offset, err := parsePagination(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	results, totalCount, err := h.getUC.ExecuteGetByUserID(c.Request.Context(), userID, limit, offset)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, response.NewIncomeListResponse(results))
+	c.JSON(http.StatusOK, response.NewPaginatedIncomeResponse(results, totalCount, limit, offset))
 }
 
 // GET /api/incomes/:id

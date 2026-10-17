@@ -34,6 +34,26 @@ func NewIncomeResponse(result *dto.IncomeResult) IncomeResponse {
 	}
 }
 
+type PaginatedIncomeResponse struct {
+	Items      []IncomeResponse `json:"items"`
+	TotalCount int64            `json:"totalCount"`
+	Limit      int32            `json:"limit"`
+	Offset     int32            `json:"offset"`
+}
+
+func NewPaginatedIncomeResponse(results []*dto.IncomeResult, totalCount int64, limit int32, offset int32) PaginatedIncomeResponse {
+	items := make([]IncomeResponse, len(results))
+	for i, result := range results {
+		items[i] = NewIncomeResponse(result)
+	}
+	return PaginatedIncomeResponse{
+		Items:      items,
+		TotalCount: totalCount,
+		Limit:      limit,
+		Offset:     offset,
+	}
+}
+
 func NewIncomeListResponse(results []*dto.IncomeResult) []IncomeResponse {
 	responses := make([]IncomeResponse, len(results))
 	for i, result := range results {
